@@ -10,37 +10,38 @@ import net.techcable.srglib.format.MappingsFormat
 import net.techcable.srglib.mappings.Mappings
 import provider.*
 import java.io.File
+import SpigotMappingType.*
 
 enum class MinecraftVersion(
     val mcVersion: String,
     val mcpVersion: String? = null,
     val mcpConfig: Boolean = false,
-    val spigot: Boolean = false,
+    val spigot: SpigotMappingType = SpigotMappingType.NO_SPIGOT,
     val yarn: Boolean = false,
     val mojang: Boolean = false,
 	val legacyIntermediary: Boolean = false
 ) {
-    V1_15_2("1.15.2", "snapshot_20200515", true, true, true, true, false),
-    V1_15_1("1.15.1", "snapshot_20191217", true, true, true, true, false),
-    V1_15("1.15", "snapshot_nodoc_20191212", true, true, true, true, false),
-    V1_14_4("1.14.4", "snapshot_nodoc_20190729", true, true, true, true, false),
-    V1_14_3("1.14.3", "snapshot_nodoc_20190729", true, true, true, false, false),
-    V1_14_2("1.14.2", "stable_nodoc_53", false, true, true, false, false),
-    V1_14_1("1.14.1", "stable_nodoc_51", false, true, true, false, false),
-    V1_14("1.14", "stable_nodoc_49", false, true, true, false, false),
-    V1_13_2("1.13.2", "stable_nodoc_47", false, true, false, false, true),
-    V1_13_1("1.13.1", "stable_nodoc_45", false, true, false, false, true),
-    V1_13("1.13", "stable_nodoc_43", false, true, false, false, true),
-    V1_12_2("1.12.2", "snapshot_nodoc_20180129", false, true, false, false, true),
-    V1_12("1.12", "snapshot_nodoc_20180814", false, true, false, false, false),
-    V1_11("1.11", "snapshot_nodoc_20170612", false, true, false, false, false),
-    V1_10_2("1.10.2", "snapshot_nodoc_20160703", false, true, false, false, false),
-    V1_9_4("1.9.4", "snapshot_nodoc_20160604", false, true, false, false, false),
-    V1_9("1.9", "snapshot_nodoc_20160516", false, true, false, false, false),
-    V1_8_9("1.8.9", "snapshot_nodoc_20160301", false, false, false, false, true),
-    V1_8_8("1.8.8", "snapshot_nodoc_20151216", false, true, false, false, false),
-    V1_8("1.8", "snapshot_nodoc_20141130", false, true, false, false, false),
-    V1_7_10("1.7.10", "snapshot_nodoc_20140925", false, false, false, false, false);
+    V1_15_2("1.15.2", "snapshot_20200515", true, SPIGOT, true, true, false),
+    V1_15_1("1.15.1", "snapshot_20191217", true, SPIGOT, true, true, false),
+    V1_15("1.15", "snapshot_nodoc_20191212", true, SPIGOT, true, true, false),
+    V1_14_4("1.14.4", "snapshot_nodoc_20190729", true, SPIGOT, true, true, false),
+    V1_14_3("1.14.3", "snapshot_nodoc_20190729", true, SPIGOT, true, false, false),
+    V1_14_2("1.14.2", "stable_nodoc_53", false, SPIGOT, true, false, false),
+    V1_14_1("1.14.1", "stable_nodoc_51", false, SPIGOT, true, false, false),
+    V1_14("1.14", "stable_nodoc_49", false, SPIGOT, true, false, false),
+    V1_13_2("1.13.2", "stable_nodoc_47", false, SPIGOT, false, false, true),
+    V1_13_1("1.13.1", "stable_nodoc_45", false, SPIGOT, false, false, true),
+    V1_13("1.13", "stable_nodoc_43", false, SPIGOT, false, false, true),
+    V1_12_2("1.12.2", "snapshot_nodoc_20180129", false, SPIGOT, false, false, true),
+    V1_12("1.12", "snapshot_nodoc_20180814", false, SPIGOT, false, false, false),
+    V1_11("1.11", "snapshot_nodoc_20170612", false, SPIGOT, false, false, false),
+    V1_10_2("1.10.2", "snapshot_nodoc_20160703", false, SPIGOT, false, false, false),
+    V1_9_4("1.9.4", "snapshot_nodoc_20160604", false, SPIGOT, false, false, false),
+    V1_9("1.9", "snapshot_nodoc_20160516", false, SPIGOT, false, false, false),
+    V1_8_9("1.8.9", "snapshot_nodoc_20160301", false, SPIGOT, false, false, true),
+    V1_8_8("1.8.8", "snapshot_nodoc_20151216", false, SPIGOT, false, false, false),
+    V1_8("1.8", "snapshot_nodoc_20141130", false, SPIGOT, false, false, false),
+    V1_7_10("1.7.10", "snapshot_nodoc_20140925", false, LEGACY_MCDEV, false, false, false);
 
     fun generateMappings(): List<Pair<String, Mappings>> {
         // Mappings, fromObf
@@ -57,11 +58,14 @@ enum class MinecraftVersion(
             mappings.add(Pair(obf2srgMappings, "srg"))
             mappings.add(Pair(obf2mcp, "mcp"))
         }
-        if (spigot) {
+        if (spigot == SPIGOT) {
             val buildDataCommit = getBuildDataCommit(mcVersion)
             val obf2spigotMappings = downloadSpigotMappings(buildDataCommit)
             mappings.add(Pair(obf2spigotMappings, "spigot"))
-        }
+        } else if (spigot == LEGACY_MCDEV) {
+			val obf2mcdevMappings = readMcDevMappings(mcVersion)
+			mappings.add(Pair(obf2mcdevMappings, "spigot"))
+		}
         if (yarn) {
             val obf2yarnMappingsSet = getYarnMappings(mcVersion)
             obf2yarnMappingsSet.forEach { id, m -> mappings.add(Pair(m, id)) }
