@@ -97,6 +97,7 @@ enum class MinecraftVersion(
             val srgLines = MappingsFormat.SEARGE_FORMAT.toLines(strippedMappings)
             srgLines.sort()
             val file = File(outputFolder, "$fileName.srg")
+			file.createNewFile()
             file.bufferedWriter().use {
                 for (line in srgLines) {
                     it.write(line)

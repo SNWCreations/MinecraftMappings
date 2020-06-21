@@ -132,11 +132,13 @@ object TSrgUtil {
                 )
             }
         }
+		srgFile.createNewFile();
         srgFile.writeText(output.toString().split("\n").sorted().filter { it.isNotEmpty() }.joinToString("\n"))
     }
 
     fun toSrg(tsrgFile: File, srgFile: File): List<Clazz> {
         // checks
+		srgFile.getParentFile().mkdirs()
         if (!(srgFile.exists())) srgFile.createNewFile()
         if (srgFile.exists() && !srgFile.isFile) throw RuntimeException("srg path is not a file: $srgFile")
         if (!tsrgFile.exists() || !tsrgFile.isFile) throw RuntimeException("tsrg file not found: $tsrgFile")
