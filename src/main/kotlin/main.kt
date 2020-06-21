@@ -15,7 +15,7 @@ fun main() {
         }
     }.forEach { runBlocking { it.join() } }
 */
-    MinecraftVersion.V1_15_2.write(GLOBAL_FOLDER)
+    MinecraftVersion.V1_8_9.write(GLOBAL_FOLDER)
     val elapsed = (System.currentTimeMillis() - time) / 1000.0
     println("Done. Took ${elapsed / 60}m (${elapsed}s)")
 }
