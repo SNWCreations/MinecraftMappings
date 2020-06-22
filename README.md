@@ -26,8 +26,8 @@ Supported versions:
 | 1.9.4  | &#x2713; | &#x2713; | &#x2713; |          |              |          |
 | 1.9    | &#x2713; | &#x2713; | &#x2713; |          |              |          |
 | 1.8.9  |          | &#x2713; | &#x2713; |          | &#x2713;     |          |
-| 1.8.8  | &#x2713; | &#x2713; | &#x2713; |          |              |          |
-| 1.8    | &#x2713; | &#x2713; | &#x2713; |          |              |          |
+| 1.8.8  | &#x2713; | &#x2713; | &#x2713; |          | &#x2713;     |          |
+| 1.8    | &#x2713; | &#x2713; | &#x2713; |          | &#x2713;     |          |
 | 1.7.10 | &#x2713; | &#x2713; | &#x2713; |          |              |          |
 
 Supported formats:
@@ -43,7 +43,7 @@ These mappings were made possible by @Techcable, the MCP team, Bukkit, SpigotMC,
 ## TODO
 
 - [ ] [older versions](https://github.com/agaricusb/MinecraftRemapping)
-- [ ] < 1.8 CraftBukkit mappings?
+- [x] < 1.8 CraftBukkit mappings? (see /storage)
 - [ ] snapshots?
 
 ## License

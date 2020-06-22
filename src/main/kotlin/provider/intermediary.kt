@@ -15,7 +15,12 @@ fun getLegacyIntermediaryVersion(minecraftVersion: String): String {
 }
 
 fun downloadLegacyIntermediary(yarnVersion: String, file: File) {
-    URL("https://raw.githubusercontent.com/Legacy-Fabric/Legacy-Intermediaries/master/mappings/$yarnVersion.tiny").downloadTo(file)
+	try {
+	    URL("https://raw.githubusercontent.com/Legacy-Fabric/Legacy-Intermediaries/master/mappings/$yarnVersion.tiny").downloadTo(file)
+	} catch (ex : Exception) {
+		file.delete()
+		URL("https://raw.githubusercontent.com/IsaiahPatton/Legacy-Intermediaries/master/mappings/$yarnVersion.tiny").downloadTo(file)
+	}
 }
 
 fun getLegacyIntermediaryMappings(minecraftVersion: String): Map<String, Mappings> {

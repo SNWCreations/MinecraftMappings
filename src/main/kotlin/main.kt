@@ -5,17 +5,19 @@ import java.io.File
 
 val GLOBAL_FOLDER = File("mappings")
 
-fun main() {
+fun main(args: Array<String>) {
     val time = System.currentTimeMillis()
     GLOBAL_FOLDER.mkdirs()
-    /*MinecraftVersion.values().map {
-        GlobalScope.launch {
-            println("Starting ${it.mcVersion}")
-            it.write(GLOBAL_FOLDER)
-        }
-    }.forEach { runBlocking { it.join() } }
-*/
-    MinecraftVersion.V1_8_9.write(GLOBAL_FOLDER)
-    val elapsed = (System.currentTimeMillis() - time) / 1000.0
-    println("Done. Took ${elapsed / 60}m (${elapsed}s)")
+
+	if (args.isEmpty()) {
+		println("Usage: java -jar mappings-generator.jar <minecraftversion>")
+		println("Possible values for <minecraftversion> :")
+		MinecraftVersion.values().forEach {
+			println("\t" + it);
+		}
+	} else {
+	    MinecraftVersion.valueOf(args[0]).write(GLOBAL_FOLDER)
+        val elapsed = (System.currentTimeMillis() - time) / 1000.0
+        println("Done. Took ${elapsed / 60}m (${elapsed}s)")
+	}
 }
