@@ -41,7 +41,14 @@ enum class MinecraftVersion(
     V1_8_9("1.8.9", "snapshot_nodoc_20160301", false, SPIGOT, false, false, true),
     V1_8_8("1.8.8", "snapshot_nodoc_20151216", false, SPIGOT, false, false, true),
     V1_8("1.8", "snapshot_nodoc_20141130", false, SPIGOT, false, false, true),
-    V1_7_10("1.7.10", "snapshot_nodoc_20140925", false, LEGACY_MCDEV, false, false, false);
+    V1_7_10("1.7.10", "snapshot_nodoc_20140925", false, LEGACY_MCDEV, false, false, false),
+    V1_7_2("1.7.2", null, false, LEGACY_MCDEV, false, false, false),
+    V1_6_4("1.6.4", null, false, LEGACY_MCDEV, false, false, false),
+    V1_5_2("1.5.2", null, false, LEGACY_MCDEV, false, false, false),
+    V1_4_7("1.4.7", null, false, LEGACY_MCDEV, false, false, false),
+    V1_3_2("1.3.2", null, false, LEGACY_MCDEV, false, false, false),
+    V1_2_5("1.2.5", null, false, LEGACY_MCDEV, false, false, false),
+	;
 
     fun generateMappings(): List<Pair<String, Mappings>> {
         // Mappings, fromObf
