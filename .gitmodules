@@ -4,3 +4,4 @@
 [submodule "yarn"]
 	path = yarn
 	url = https://github.com/FabricMC/yarn/
+	branch = 1.16.1
