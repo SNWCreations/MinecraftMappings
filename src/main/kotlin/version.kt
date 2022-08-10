@@ -21,6 +21,10 @@ enum class MinecraftVersion(
     val mojang: Boolean = false,
 	val legacyIntermediary: Boolean = false
 ) {
+	V1_19_2("1.19.2", null, true, MODERN_SPIGOT, true, true, false),
+	V1_18_2("1.18.2", null, true, MODERN_SPIGOT, true, true, false),
+	V1_17_1("1.17.1", null, true, SPIGOT, true, true, false),
+	V1_16_5("1.16.5", null, true, SPIGOT, true, true, false),
 	V1_16_2("1.16.2", null, true, SPIGOT, true, true, false),
 	V1_16_1("1.16.1", null, true, SPIGOT, true, true, false),
     V1_15_2("1.15.2", "snapshot_20200515", true, SPIGOT, true, true, false),
@@ -67,9 +71,9 @@ enum class MinecraftVersion(
             mappings.add(Pair(obf2srgMappings, "srg"))
             mappings.add(Pair(obf2mcp, "mcp"))
         }
-        if (spigot == SPIGOT) {
+        if (spigot == SPIGOT || spigot == MODERN_SPIGOT) {
             val buildDataCommit = getBuildDataCommit(mcVersion)
-            val obf2spigotMappings = downloadSpigotMappings(buildDataCommit)
+            val obf2spigotMappings = downloadSpigotMappings(buildDataCommit, spigot == MODERN_SPIGOT)
             mappings.add(Pair(obf2spigotMappings, "spigot"))
         } else if (spigot == LEGACY_MCDEV) {
 			val obf2mcdevMappings = readMcDevMappings(mcVersion)
@@ -97,8 +101,14 @@ enum class MinecraftVersion(
             completeMappings.add(Pair("${a.second}2obf", a2obfMappings))
             for (b in mappings) {
                 if (a != b) {
-                    val a2bMappings = Mappings.chain(a2obfMappings, b.first)
-                    completeMappings.add(Pair("${a.second}2${b.second}", a2bMappings))
+					try {
+						// some code
+						val a2bMappings = Mappings.chain(a2obfMappings, b.first)
+						completeMappings.add(Pair("${a.second}2${b.second}", a2bMappings))
+					} catch (e: IllegalArgumentException) {
+						// handler
+						println("Failed: ${a.second}2${b.second}")
+					}
                 }
             }
         }

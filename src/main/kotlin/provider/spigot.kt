@@ -121,7 +121,7 @@ val brokenLines = setOf(
 
 fun stripBrokenLines(lines: List<String>) = lines.filter { it !in brokenLines && "<init>" !in it }
 
-fun downloadSpigotMappings(buildDataCommit: String): Mappings {
+fun downloadSpigotMappings(buildDataCommit: String, modern: Boolean): Mappings {
     val baseUrl = "https://hub.spigotmc.org/stash/projects/SPIGOT/repos/builddata/browse/"
     val cacheDir = File("cache/spigot_$buildDataCommit")
     val classMappingsFile = File(cacheDir, "classes.csrg")
@@ -131,13 +131,15 @@ fun downloadSpigotMappings(buildDataCommit: String): Mappings {
         cacheDir.mkdirs()
         val info = URL("$baseUrl/info.json?at=$buildDataCommit&raw").loadJson().asJsonObject
         val classMappingsLocation = info.get("classMappings").asString
-        val memberMappingsLocation = info.get("memberMappings").asString
         val packageMappingsLocation = info.get("packageMappings").asString
         if (!classMappingsFile.exists()) {
             URL("$baseUrl/mappings/$classMappingsLocation/?at=$buildDataCommit&raw").downloadTo(classMappingsFile)
         }
         if (!memberMappingsFile.exists()) {
-            URL("$baseUrl/mappings/$memberMappingsLocation/?at=$buildDataCommit&raw").downloadTo(memberMappingsFile)
+			if (!modern) {
+				val memberMappingsLocation = info.get("memberMappings").asString
+				URL("$baseUrl/mappings/$memberMappingsLocation/?at=$buildDataCommit&raw").downloadTo(memberMappingsFile)
+			}
         }
         if (!packageMappingsFile.exists()) {
             val packages = HashMap<String, String>()
@@ -176,7 +178,13 @@ fun downloadSpigotMappings(buildDataCommit: String): Mappings {
         }
     }
     val classMappings = MappingsFormat.COMPACT_SEARGE_FORMAT.parseLines(stripBrokenLines(classMappingsFile.readLines()))
-    val memberMappings =
+    
+	if (modern) {
+		// 1.18+
+		return Mappings.chain(ImmutableList.of(classMappings))
+	}
+	
+	val memberMappings =
         MappingsFormat.COMPACT_SEARGE_FORMAT.parseLines(stripBrokenLines(memberMappingsFile.readLines()))
     val packages = JsonReader(packageMappingsFile.reader()).use {
         val builder = ImmutableMap.builder<String, String>()

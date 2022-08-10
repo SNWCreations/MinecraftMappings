@@ -61,7 +61,14 @@ fun getYarnMappings(minecraftVersion: String): Map<String, Mappings> {
                         if (index >= 4) {
                             val namespace = namespaces[index - 4]
                             if (namespace != "official") {
-                                field.add(namespace, mapped)
+
+								val broken = arrayOf("field_24240", "field_24245")
+								
+								//if (!(mapped in broken)) {
+									field.add(namespace, mapped)
+								//} else {
+								//	println("Test: $namespace $mapped")
+								//}
                             }
                         }
                     }

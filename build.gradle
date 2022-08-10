@@ -46,6 +46,7 @@ compileTestKotlin {
 }
 
 jar {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
         attributes(
             'Main-Class': 'MainKt'
