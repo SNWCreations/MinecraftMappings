@@ -93,7 +93,7 @@ object MojangMappings {
 
 
     data class LorenzMappings(
-       // val clientMappings: MappingSet,
+        val clientMappings: MappingSet,
         val serverMappings: MappingSet
     )
 }
