@@ -80,7 +80,10 @@ fun stripDuplicates(mappings: Mappings): ImmutableMappings {
 }
 
 class CacheInfo(val buildDataCommits: MutableMap<String, String> = HashMap()) {
-    fun saveTo(file: File) = file.writer().use { Gson().toJson(this, it) }
+    fun saveTo(file: File) {
+        file.parentFile.mkdirs()
+        file.writer().use { Gson().toJson(this, it) }
+    }
 
     companion object {
         fun loadFrom(file: File) = file.reader().use { Gson().fromJson<CacheInfo>(it) }
