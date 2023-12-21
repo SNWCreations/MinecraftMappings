@@ -1,8 +1,16 @@
 # Minecraft Mappings
 
-This tool creates transitive mappings for various Minecraft versions.
+**This repository is a fork.**
 
-All the mappings can be translated to one another for a given version: `spigot2mcp.srg`, `srg2obf.mcp`, etc.
+I have disabled the SRG/TSRG generating codes because I don't need them.
+
+So transitive mappings to **Mojmap/MCP/Searge** are **NOT** producible by this fork,
+although they are supported by original code.
+
+This tool creates `obf <-> spigot <-> intermediary <-> yarn` mappings for various Minecraft versions.
+
+~~All the mappings can be translated to one another for a given version: `spigot2mcp.srg`, `srg2obf.mcp`, etc.~~
+* This feature is disabled.
 
 Supported versions:
 
@@ -45,11 +53,11 @@ Supported versions:
 
 Supported formats:
 
-- SRG
-- CSRG
-- TSRG
+- ~~SRG~~ (Disabled)
+- ~~CSRG~~ (Disabled)
+- ~~TSRG~~ (Disabled)
 - Tiny <small>(fields descriptors don't exist)</small>
-- JSON
+- ~~JSON~~ (Disabled)
 
 These mappings were made possible by @Techcable, the MCP team, Bukkit, SpigotMC, FabricMC, Mojang, and various other people.
 
