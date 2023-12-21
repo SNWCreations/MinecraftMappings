@@ -1,6 +1,3 @@
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.File
 
 val GLOBAL_FOLDER = File("mappings")
@@ -13,10 +10,10 @@ fun main(args: Array<String>) {
 		println("Usage: java -jar mappings-generator.jar <minecraftversion>")
 		println("Possible values for <minecraftversion> :")
 		MinecraftVersion.values().forEach {
-			println("\t" + it);
+			println("\t" + it.mcVersion);
 		}
 	} else {
-	    MinecraftVersion.valueOf(args[0]).write(GLOBAL_FOLDER)
+	    MinecraftVersion.findByMCVersion(args[0])!!.write(GLOBAL_FOLDER)
         val elapsed = (System.currentTimeMillis() - time) / 1000.0
         println("Done. Took ${elapsed / 60}m (${elapsed}s)")
 	}
