@@ -88,10 +88,10 @@ enum class MinecraftVersion(
             val obf2legacyIntermediaryMappingsSet = getLegacyIntermediaryMappings(mcVersion)
             obf2legacyIntermediaryMappingsSet.forEach { id, m -> mappings.add(Pair(m, id)) }
         }
-        if (mojang) {
-            val obf2mojangMappingSet = MojangMappings.getMappings(mcVersion)
-            mappings.add(Pair(obf2mojangMappingSet, "mojang"))
-        }
+//        if (mojang) {
+//            val obf2mojangMappingSet = MojangMappings.getMappings(mcVersion)
+//            mappings.add(Pair(obf2mojangMappingSet, "mojang"))
+//        }
 
         val completeMappings = mutableListOf<Pair<String, Mappings>>()
         for (a in mappings) {
@@ -99,19 +99,19 @@ enum class MinecraftVersion(
             val a2obfMappings = obf2aMappings.inverted()
 
             completeMappings.add(Pair("obf2${a.second}", obf2aMappings))
-            completeMappings.add(Pair("${a.second}2obf", a2obfMappings))
-            for (b in mappings) {
-                if (a != b) {
-					try {
-						// some code
-						val a2bMappings = Mappings.chain(a2obfMappings, b.first)
-						completeMappings.add(Pair("${a.second}2${b.second}", a2bMappings))
-					} catch (e: IllegalArgumentException) {
-						// handler
-						println("Failed: ${a.second}2${b.second}")
-					}
-                }
-            }
+//            completeMappings.add(Pair("${a.second}2obf", a2obfMappings))
+//            for (b in mappings) {
+//                if (a != b) {
+//					try {
+//						// some code
+//						val a2bMappings = Mappings.chain(a2obfMappings, b.first)
+//						completeMappings.add(Pair("${a.second}2${b.second}", a2bMappings))
+//					} catch (e: IllegalArgumentException) {
+//						// handler
+//						println("Failed: ${a.second}2${b.second}")
+//					}
+//                }
+//            }
         }
         return completeMappings
     }
@@ -120,41 +120,41 @@ enum class MinecraftVersion(
         val outputFolder = File(mappingsFolder, mcVersion)
         outputFolder.mkdirs()
 
-        fun Mappings.writeTo(fileName: String) {
-            println("$mcVersion: writing mappings to $fileName.srg")
-            val strippedMappings = stripDuplicates(this)
-            val srgLines = MappingsFormat.SEARGE_FORMAT.toLines(strippedMappings)
-            srgLines.sort()
-            val file = File(outputFolder, "$fileName.srg")
-			file.createNewFile()
-            file.bufferedWriter().use {
-                for (line in srgLines) {
-                    it.write(line)
-                    it.write("\n")
-                }
-            }
-
-            println("$mcVersion: writing mappings to $fileName.csrg")
-            val csrgLines = MappingsFormat.COMPACT_SEARGE_FORMAT.toLines(strippedMappings)
-            csrgLines.sort()
-            File(outputFolder, "$fileName.csrg").bufferedWriter().use {
-                for (line in csrgLines) {
-                    it.write(line)
-                    it.write("\n")
-                }
-            }
-
-            println("$mcVersion: writing mappings to $fileName.tsrg")
-            TSrgUtil.fromSrg(file, File(outputFolder, "$fileName.tsrg"))
-        }
+//        fun Mappings.writeTo(fileName: String) {
+//            println("$mcVersion: writing mappings to $fileName.srg")
+//            val strippedMappings = stripDuplicates(this)
+//            val srgLines = MappingsFormat.SEARGE_FORMAT.toLines(strippedMappings)
+//            srgLines.sort()
+//            val file = File(outputFolder, "$fileName.srg")
+//			file.createNewFile()
+//            file.bufferedWriter().use {
+//                for (line in srgLines) {
+//                    it.write(line)
+//                    it.write("\n")
+//                }
+//            }
+//
+//            println("$mcVersion: writing mappings to $fileName.csrg")
+//            val csrgLines = MappingsFormat.COMPACT_SEARGE_FORMAT.toLines(strippedMappings)
+//            csrgLines.sort()
+//            File(outputFolder, "$fileName.csrg").bufferedWriter().use {
+//                for (line in csrgLines) {
+//                    it.write(line)
+//                    it.write("\n")
+//                }
+//            }
+//
+//            println("$mcVersion: writing mappings to $fileName.tsrg")
+//            TSrgUtil.fromSrg(file, File(outputFolder, "$fileName.tsrg"))
+//        }
 
         // srg & tsrg
         val generatedMappings = generateMappings()
-        generatedMappings.forEach { pair ->
-            val fileName = pair.first
-            val mappings = pair.second
-            mappings.writeTo(fileName)
-        }
+//        generatedMappings.forEach { pair ->
+//            val fileName = pair.first
+//            val mappings = pair.second
+//            mappings.writeTo(fileName)
+//        }
 
         // tiny
         println("$mcVersion: writing tiny mappings to $mcVersion.tiny")
@@ -172,20 +172,58 @@ enum class MinecraftVersion(
         }
 
         // json
-        val classMappings =
-            MultimapBuilder.hashKeys(1000).arrayListValues().build<JavaType, Pair<String, JavaType>>()
-        val fieldMappings =
-            MultimapBuilder.hashKeys(1000).arrayListValues().build<FieldData, Pair<String, FieldData>>()
-        val methodMappings =
-            MultimapBuilder.hashKeys(1000).arrayListValues().build<MethodData, Pair<String, MethodData>>()
-        generatedMappings.filter { it.first.startsWith("obf2") }.forEach { pair ->
-            val name = pair.first.split("2")[1]
-            val mappings = pair.second
-            mappings.forEachClass { obf, mapped -> classMappings.put(obf, Pair(name, mapped)) }
-            mappings.forEachField { obf, mapped -> fieldMappings.put(obf, Pair(name, mapped)) }
-            mappings.forEachMethod { obf, mapped -> methodMappings.put(obf, Pair(name, mapped)) }
-            println("$mcVersion: generating json for $name")
-        }
+//        val classMappings =
+//            MultimapBuilder.hashKeys(1000).arrayListValues().build<JavaType, Pair<String, JavaType>>()
+//        val fieldMappings =
+//            MultimapBuilder.hashKeys(1000).arrayListValues().build<FieldData, Pair<String, FieldData>>()
+//        val methodMappings =
+//            MultimapBuilder.hashKeys(1000).arrayListValues().build<MethodData, Pair<String, MethodData>>()
+//        generatedMappings.filter { it.first.startsWith("obf2") }.forEach { pair ->
+//            val name = pair.first.split("2")[1]
+//            val mappings = pair.second
+//            mappings.forEachClass { obf, mapped -> classMappings.put(obf, Pair(name, mapped)) }
+//            mappings.forEachField { obf, mapped -> fieldMappings.put(obf, Pair(name, mapped)) }
+//            mappings.forEachMethod { obf, mapped -> methodMappings.put(obf, Pair(name, mapped)) }
+//            println("$mcVersion: generating json for $name")
+//        }
+//
+//        fun String.lp(): String = split(".").last()
+//
+//        val classArray = JsonArray()
+//        val fieldArray = JsonArray()
+//        val methodArray = JsonArray()
+//        for (obf in classMappings.keySet()) {
+//            val mappedObj = JsonObject()
+//            mappedObj.addProperty("obf", obf.name.lp())
+//            classMappings.get(obf).forEach {
+//                mappedObj.addProperty(it.first, it.second.name.lp())
+//            }
+//            classArray.add(mappedObj)
+//        }
+//        for (obf in fieldMappings.keySet()) {
+//            val mappedObj = JsonObject()
+//            mappedObj.addProperty("obf", obf.declaringType.name.lp() + "." + obf.name.lp())
+//            fieldMappings.get(obf).forEach {
+//                mappedObj.addProperty(it.first, it.second.declaringType.name.lp() + "." + it.second.name)
+//            }
+//            fieldArray.add(mappedObj)
+//        }
+//        for (obf in methodMappings.keySet()) {
+//            val mappedObj = JsonObject()
+//            mappedObj.addProperty("obf", obf.declaringType.name.lp() + "." + obf.name.lp())
+//            methodMappings.get(obf).forEach {
+//                mappedObj.addProperty(it.first, it.second.declaringType.name.lp() + "." + it.second.name)
+//            }
+//            methodArray.add(mappedObj)
+//        }
+//
+//        val bigJson = JsonObject()
+//        bigJson.addProperty("minecraftVersion", mcVersion)
+//        bigJson.add("classes", classArray)
+//        bigJson.add("fields", fieldArray)
+//        bigJson.add("methods", methodArray)
+//        File(outputFolder, "$mcVersion.json").writeText(Gson().toJson(bigJson))
+    }
 
         fun String.lp(): String = split(".").last()
 
