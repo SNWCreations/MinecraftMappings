@@ -80,10 +80,11 @@ fun getLegacyIntermediaryMappings(minecraftVersion: String): Map<String, Mapping
             }
         }
     //}
-    tinyMappings.toMappings().forEach { namespace, mappings ->
+    val mappings = tinyMappings.toMappings()
+    mappings.forEach { namespace, mappings ->
         println("yarn $minecraftVersion $namespace: parsed class=${mappings.classes().size} method=${mappings.fields().size} field=${mappings.methods().size}")
     }
-    return tinyMappings.toMappings()
+    return mappings
 }
 
 fun getLegacyIntermediarynMappingsFromSubmodule(minecraftVersion: String): Mappings {
