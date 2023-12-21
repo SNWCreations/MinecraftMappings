@@ -225,41 +225,17 @@ enum class MinecraftVersion(
 //        File(outputFolder, "$mcVersion.json").writeText(Gson().toJson(bigJson))
     }
 
-        fun String.lp(): String = split(".").last()
+    companion object {
+        private val mcVersionToEnumValue: Map<String, MinecraftVersion>
 
-        val classArray = JsonArray()
-        val fieldArray = JsonArray()
-        val methodArray = JsonArray()
-        for (obf in classMappings.keySet()) {
-            val mappedObj = JsonObject()
-            mappedObj.addProperty("obf", obf.name.lp())
-            classMappings.get(obf).forEach {
-                mappedObj.addProperty(it.first, it.second.name.lp())
+        init {
+            val map = mutableMapOf<String, MinecraftVersion>()
+            for (minecraftVersion in values()) {
+                map[minecraftVersion.mcVersion] = minecraftVersion
             }
-            classArray.add(mappedObj)
+            mcVersionToEnumValue = map
         }
-        for (obf in fieldMappings.keySet()) {
-            val mappedObj = JsonObject()
-            mappedObj.addProperty("obf", obf.declaringType.name.lp() + "." + obf.name.lp())
-            fieldMappings.get(obf).forEach {
-                mappedObj.addProperty(it.first, it.second.declaringType.name.lp() + "." + it.second.name)
-            }
-            fieldArray.add(mappedObj)
-        }
-        for (obf in methodMappings.keySet()) {
-            val mappedObj = JsonObject()
-            mappedObj.addProperty("obf", obf.declaringType.name.lp() + "." + obf.name.lp())
-            methodMappings.get(obf).forEach {
-                mappedObj.addProperty(it.first, it.second.declaringType.name.lp() + "." + it.second.name)
-            }
-            methodArray.add(mappedObj)
-        }
-
-        val bigJson = JsonObject()
-        bigJson.addProperty("minecraftVersion", mcVersion)
-        bigJson.add("classes", classArray)
-        bigJson.add("fields", fieldArray)
-        bigJson.add("methods", methodArray)
-        File(outputFolder, "$mcVersion.json").writeText(Gson().toJson(bigJson))
+        fun findByMCVersion(
+            mcVersion: String) = mcVersionToEnumValue[mcVersion]
     }
 }
