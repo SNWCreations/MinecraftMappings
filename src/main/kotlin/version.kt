@@ -97,7 +97,7 @@ enum class MinecraftVersion(
         val completeMappings = mutableListOf<Pair<String, Mappings>>()
         for (a in mappings) {
             val obf2aMappings = a.first
-            val a2obfMappings = obf2aMappings.inverted()
+//            val a2obfMappings = obf2aMappings.inverted()
 
             completeMappings.add(Pair("obf2${a.second}", obf2aMappings))
 //            completeMappings.add(Pair("${a.second}2obf", a2obfMappings))
