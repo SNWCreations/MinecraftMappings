@@ -112,11 +112,11 @@ class Mappings(
                 methodData.mapTypes { classMappings[it] ?: it }.withName(method[namespace] ?: method.source)
             )
         }.toMap())
-        val namespace = when (namespace) {
+        val n = when (namespace) {
             "named" -> "yarn"
             else -> namespace
         }
-        namespace to ImmutableMappings.create(classMappings, methodMappings, fieldMappings)
+        n to ImmutableMappings.create(classMappings, methodMappings, fieldMappings)
     }.toMap()
 }
 

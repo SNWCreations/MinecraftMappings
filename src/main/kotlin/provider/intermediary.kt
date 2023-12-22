@@ -81,8 +81,8 @@ fun getLegacyIntermediaryMappings(minecraftVersion: String): Map<String, Mapping
         }
     //}
     val mappings = tinyMappings.toMappings()
-    mappings.forEach { namespace, mappings ->
-        println("yarn $minecraftVersion $namespace: parsed class=${mappings.classes().size} method=${mappings.fields().size} field=${mappings.methods().size}")
+    mappings.forEach { (namespace, m) ->
+        println("yarn $minecraftVersion $namespace: parsed class=${m.classes().size} method=${m.fields().size} field=${m.methods().size}")
     }
     return mappings
 }
