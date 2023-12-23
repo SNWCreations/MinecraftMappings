@@ -96,4 +96,28 @@ object MojangMappings {
         val clientMappings: MappingSet,
         val serverMappings: MappingSet
     )
+
+    fun downloadServerMojmap(version: String, folder: File): File {
+        folder.mkdirs()
+        val versions = URL("https://piston-meta.mojang.com/mc/game/version_manifest.json").loadJson()
+            .asJsonObject
+            .getAsJsonArray("versions")
+        var versionJsonUrl: String? = null
+        for (v in versions) {
+            if (v.asJsonObject.get("id").asString.equals(version)) {
+                versionJsonUrl = v.asJsonObject.get("url").asString
+            }
+        }
+        if (versionJsonUrl == null) {
+            throw IllegalArgumentException("Could not find Minecraft version $version")
+        }
+        val versionJson = URL(versionJsonUrl).loadJson().asJsonObject
+        val downloads = versionJson.getAsJsonObject("downloads")
+        val serverMappingUrl =
+            URL(downloads.getAsJsonObject("server_mappings")["url"].asString)
+
+        val saveTo = File(folder, "minecraft_server.$version.txt")
+        serverMappingUrl.downloadTo(saveTo)
+        return saveTo
+    }
 }

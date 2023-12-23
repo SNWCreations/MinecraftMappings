@@ -17,6 +17,7 @@ import net.techcable.srglib.MethodData
 import net.techcable.srglib.format.MappingsFormat
 import net.techcable.srglib.mappings.ImmutableMappings
 import net.techcable.srglib.mappings.Mappings
+import org.spigotmc.mapper.MapUtil
 import java.io.File
 import java.io.Reader
 import java.net.URL
@@ -124,12 +125,13 @@ val brokenLines = setOf(
 
 fun stripBrokenLines(lines: List<String>) = lines.filter { it !in brokenLines && "<init>" !in it }
 
-fun downloadSpigotMappings(buildDataCommit: String, modern: Boolean): Mappings {
+fun downloadSpigotMappings(mcVersion: String, tmpFolder: File, buildDataCommit: String, modern: Boolean): Mappings {
     val baseUrl = "https://hub.spigotmc.org/stash/projects/SPIGOT/repos/builddata/browse/"
     val cacheDir = File("cache/spigot_$buildDataCommit")
     val classMappingsFile = File(cacheDir, "classes.csrg")
     val memberMappingsFile = File(cacheDir, "members.csrg")
     val packageMappingsFile = File(cacheDir, "packages.json")
+    var modernMemberMap: Mappings? = null
     if (!classMappingsFile.exists() || !memberMappingsFile.exists() || !packageMappingsFile.exists()) {
         cacheDir.mkdirs()
         val info = URL("$baseUrl/info.json?at=$buildDataCommit&raw").loadJson().asJsonObject
@@ -143,6 +145,14 @@ fun downloadSpigotMappings(buildDataCommit: String, modern: Boolean): Mappings {
 				val memberMappingsLocation = info.get("memberMappings").asString
 				URL("$baseUrl/mappings/$memberMappingsLocation/?at=$buildDataCommit&raw").downloadTo(memberMappingsFile)
 			}
+            else {
+                val serverMap = MojangMappings.downloadServerMojmap(mcVersion, tmpFolder)
+                val savedMemberMapFile = File(tmpFolder, "bukkit-$mcVersion-fields.csrg")
+                val mapUtil = MapUtil()
+                mapUtil.loadBuk(classMappingsFile)
+                mapUtil.makeFieldMaps(serverMap, savedMemberMapFile, true)
+                modernMemberMap = MappingsFormat.COMPACT_SEARGE_FORMAT.parseFile(savedMemberMapFile)
+            }
         }
         if (!packageMappingsFile.exists()) {
             val packages = HashMap<String, String>()
@@ -184,7 +194,7 @@ fun downloadSpigotMappings(buildDataCommit: String, modern: Boolean): Mappings {
     
 	if (modern) {
 		// 1.18+
-		return Mappings.chain(ImmutableList.of(classMappings))
+		return Mappings.chain(ImmutableList.of(classMappings, modernMemberMap!!))
 	}
 	
 	val memberMappings =

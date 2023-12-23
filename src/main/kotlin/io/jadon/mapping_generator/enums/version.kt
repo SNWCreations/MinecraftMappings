@@ -53,7 +53,7 @@ enum class MinecraftVersion(
     V1_2_5("1.2.5", null, false, LEGACY_MCDEV, false, false, false),
 	;
 
-    fun generateMappings(): List<Pair<String, Mappings>> {
+    fun generateMappings(outputDir: File): List<Pair<String, Mappings>> {
         // Mappings, fromObf
         val mappings = mutableListOf<Pair<Mappings, String>>()
 
@@ -70,7 +70,7 @@ enum class MinecraftVersion(
         }
         if (spigot == SPIGOT || spigot == MODERN_SPIGOT) {
             val buildDataCommit = getBuildDataCommit(mcVersion)
-            val obf2spigotMappings = downloadSpigotMappings(buildDataCommit, spigot == MODERN_SPIGOT)
+            val obf2spigotMappings = downloadSpigotMappings(mcVersion, outputDir, buildDataCommit, spigot == MODERN_SPIGOT)
             mappings.add(Pair(obf2spigotMappings, "spigot"))
         } else if (spigot == LEGACY_MCDEV) {
 			val obf2mcdevMappings = readMcDevMappings(mcVersion)
@@ -145,7 +145,7 @@ enum class MinecraftVersion(
 //        }
 
         // srg & tsrg
-        val generatedMappings = generateMappings()
+        val generatedMappings = generateMappings(outputFolder)
 //        generatedMappings.forEach { pair ->
 //            val fileName = pair.first
 //            val mappings = pair.second
