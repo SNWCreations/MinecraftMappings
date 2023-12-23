@@ -229,7 +229,7 @@ enum class MinecraftVersion(
             for (minecraftVersion in values()) {
                 map[minecraftVersion.mcVersion] = minecraftVersion
             }
-            mcVersionToEnumValue = map
+            mcVersionToEnumValue = map.toMap()
         }
         fun findByMCVersion(
             mcVersion: String) = mcVersionToEnumValue[mcVersion]
