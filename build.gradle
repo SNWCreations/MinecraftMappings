@@ -52,7 +52,7 @@ jar {
             'Main-Class': 'MainKt'
         )
     }
-    from {
-        configurations.include.collect { it.isDirectory() ? it : zipTree(it) }
-    }
+//    from {
+//        configurations.include.collect { it.isDirectory() ? it : zipTree(it) }
+//    }
 }
