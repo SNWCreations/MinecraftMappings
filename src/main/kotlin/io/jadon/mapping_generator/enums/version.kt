@@ -222,6 +222,7 @@ enum class MinecraftVersion(
     }
 
     companion object {
+        @JvmStatic
         private val mcVersionToEnumValue: Map<String, MinecraftVersion>
 
         init {
@@ -231,6 +232,7 @@ enum class MinecraftVersion(
             }
             mcVersionToEnumValue = map.toMap()
         }
+        @JvmStatic
         fun findByMCVersion(
             mcVersion: String) = mcVersionToEnumValue[mcVersion]
     }
