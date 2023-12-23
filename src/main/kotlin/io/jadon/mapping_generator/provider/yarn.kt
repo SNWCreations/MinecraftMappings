@@ -1,4 +1,4 @@
-package provider
+package io.jadon.mapping_generator.provider
 
 import cuchaz.enigma.ProgressListener
 import cuchaz.enigma.translation.mapping.serde.MappingFormat
@@ -34,7 +34,7 @@ fun getYarnMappings(minecraftVersion: String): Map<String, Mappings> {
     if (!yarnZip.exists()) {
         downloadYarn(yarnMavenVersion, yarnZip)
     }
-    val tinyMappings = tiny.Mappings()
+    val tinyMappings = io.jadon.mapping_generator.tiny.Mappings()
     GZIPInputStream(yarnZip.inputStream()).use { zip ->
         var namespaces = listOf<String>()
         zip.reader().readLines().forEach { line ->

@@ -1,3 +1,5 @@
+package io.jadon.mapping_generator
+
 enum class SpigotMappingType {
 
     NO_SPIGOT,

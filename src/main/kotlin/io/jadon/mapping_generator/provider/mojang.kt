@@ -1,4 +1,4 @@
-package provider
+package io.jadon.mapping_generator.provider
 
 import com.google.gson.JsonParser
 import net.techcable.srglib.format.MappingsFormat

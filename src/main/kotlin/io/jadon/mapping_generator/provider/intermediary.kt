@@ -1,4 +1,4 @@
-package provider
+package io.jadon.mapping_generator.provider
 
 import cuchaz.enigma.ProgressListener
 import cuchaz.enigma.translation.mapping.serde.MappingFormat
@@ -6,8 +6,6 @@ import net.techcable.srglib.format.MappingsFormat
 import net.techcable.srglib.mappings.Mappings
 import java.io.File
 import java.net.URL
-import java.util.concurrent.TimeUnit
-import java.util.zip.GZIPInputStream
 
 
 fun getLegacyIntermediaryVersion(minecraftVersion: String): String {
@@ -29,7 +27,7 @@ fun getLegacyIntermediaryMappings(minecraftVersion: String): Map<String, Mapping
     if (!yarnZip.exists()) {
         downloadLegacyIntermediary(yarnMavenVersion, yarnZip)
     }
-    val tinyMappings = tiny.Mappings()
+    val tinyMappings = io.jadon.mapping_generator.tiny.Mappings()
     //GZIPInputStream(yarnZip.inputStream()).use { zip ->
         var namespaces = listOf<String>()
         yarnZip.readLines().forEach { line ->

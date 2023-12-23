@@ -1,3 +1,5 @@
+package io.jadon.mapping_generator
+
 import java.io.File
 
 /**

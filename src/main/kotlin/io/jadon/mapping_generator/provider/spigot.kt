@@ -1,4 +1,4 @@
-package provider
+package io.jadon.mapping_generator.provider
 
 import com.google.common.collect.ImmutableBiMap
 import com.google.common.collect.ImmutableList

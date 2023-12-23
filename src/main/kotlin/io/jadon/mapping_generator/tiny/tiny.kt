@@ -1,4 +1,4 @@
-package tiny
+package io.jadon.mapping_generator.tiny
 
 import com.google.common.collect.ImmutableBiMap
 import net.techcable.srglib.FieldData

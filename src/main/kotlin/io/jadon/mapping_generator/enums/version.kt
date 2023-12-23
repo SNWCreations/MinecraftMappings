@@ -1,16 +1,11 @@
+package io.jadon.mapping_generator.enums
+
+import io.jadon.mapping_generator.SpigotMappingType
 import com.google.common.collect.ImmutableList
-import com.google.common.collect.MultimapBuilder
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import net.techcable.srglib.FieldData
-import net.techcable.srglib.JavaType
-import net.techcable.srglib.MethodData
-import net.techcable.srglib.format.MappingsFormat
 import net.techcable.srglib.mappings.Mappings
-import provider.*
+import io.jadon.mapping_generator.provider.*
 import java.io.File
-import SpigotMappingType.*
+import io.jadon.mapping_generator.SpigotMappingType.*
 
 enum class MinecraftVersion(
     val mcVersion: String,
@@ -19,7 +14,7 @@ enum class MinecraftVersion(
     val spigot: SpigotMappingType = SpigotMappingType.NO_SPIGOT,
     val yarn: Boolean = false,
     val mojang: Boolean = false,
-	val legacyIntermediary: Boolean = false
+    val legacyIntermediary: Boolean = false
 ) {
     V1_20_1("1.20.1", null, true, MODERN_SPIGOT, true, true, false),
 	V1_19_4("1.19.4", null, true, MODERN_SPIGOT, true, true, false),
@@ -159,7 +154,7 @@ enum class MinecraftVersion(
 
         // tiny
         println("$mcVersion: writing tiny mappings to $mcVersion.tiny")
-        val tinyMappings = tiny.Mappings()
+        val tinyMappings = io.jadon.mapping_generator.tiny.Mappings()
         generatedMappings.filter { it.first.startsWith("obf2") }.forEach { pair ->
             val name = pair.first.split("2")[1]
 

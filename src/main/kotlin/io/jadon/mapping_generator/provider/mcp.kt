@@ -1,6 +1,6 @@
-package provider
+package io.jadon.mapping_generator.provider
 
-import TSrgUtil
+import io.jadon.mapping_generator.TSrgUtil
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.stream.JsonReader

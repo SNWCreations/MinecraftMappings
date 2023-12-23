@@ -1,3 +1,6 @@
+package io.jadon.mapping_generator
+
+import io.jadon.mapping_generator.enums.MinecraftVersion
 import java.io.File
 
 val GLOBAL_FOLDER = File("mappings")
