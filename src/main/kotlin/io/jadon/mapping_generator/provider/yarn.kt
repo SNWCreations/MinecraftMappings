@@ -28,9 +28,9 @@ fun downloadYarn(yarnVersion: String, file: File) {
     URL("https://maven.fabricmc.net/net/fabricmc/yarn/$yarnVersion/yarn-$yarnVersion-tiny.gz").downloadTo(file)
 }
 
-fun getYarnMappings(minecraftVersion: String): Map<String, Mappings> {
+fun getYarnMappings(outputDir: File, minecraftVersion: String): Map<String, Mappings> {
     val yarnMavenVersion = getYarnVersion(minecraftVersion)
-    val yarnZip = File("cache/yarn-$yarnMavenVersion.gz")
+    val yarnZip = File(outputDir, "cache/yarn-$yarnMavenVersion.gz")
     if (!yarnZip.exists()) {
         downloadYarn(yarnMavenVersion, yarnZip)
     }

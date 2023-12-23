@@ -69,7 +69,7 @@ enum class MinecraftVersion(
             mappings.add(Pair(obf2mcp, "mcp"))
         }
         if (spigot == SPIGOT || spigot == MODERN_SPIGOT) {
-            val buildDataCommit = getBuildDataCommit(mcVersion)
+            val buildDataCommit = getBuildDataCommit(outputDir, mcVersion)
             val obf2spigotMappings = downloadSpigotMappings(mcVersion, outputDir, buildDataCommit, spigot == MODERN_SPIGOT)
             mappings.add(Pair(obf2spigotMappings, "spigot"))
         } else if (spigot == LEGACY_MCDEV) {
@@ -77,7 +77,7 @@ enum class MinecraftVersion(
 			mappings.add(Pair(obf2mcdevMappings, "spigot"))
 		}
         if (yarn) {
-            val obf2yarnMappingsSet = getYarnMappings(mcVersion)
+            val obf2yarnMappingsSet = getYarnMappings(outputDir, mcVersion)
             obf2yarnMappingsSet.forEach { id, m -> mappings.add(Pair(m, id)) }
         }
 		if (legacyIntermediary) {

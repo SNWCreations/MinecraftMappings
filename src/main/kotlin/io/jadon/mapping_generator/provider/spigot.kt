@@ -99,8 +99,8 @@ class CacheInfo(val buildDataCommits: MutableMap<String, String> = HashMap()) {
  * @param spigotVersion the build data revision
  * @return the build data commit-id for this revision
  */
-fun getBuildDataCommit(spigotVersion: String): String {
-    val cacheFile = File("cache/info.json")
+fun getBuildDataCommit(outputDir: File, spigotVersion: String): String {
+    val cacheFile = File(outputDir, "cache/info.json")
     val cacheInfo = if (cacheFile.exists()) CacheInfo.loadFrom(cacheFile) else CacheInfo()
     return cacheInfo.buildDataCommits.getOrElse(spigotVersion) {
         val url = URL("https://hub.spigotmc.org/versions/$spigotVersion.json")
@@ -127,7 +127,7 @@ fun stripBrokenLines(lines: List<String>) = lines.filter { it !in brokenLines &&
 
 fun downloadSpigotMappings(mcVersion: String, tmpFolder: File, buildDataCommit: String, modern: Boolean): Mappings {
     val baseUrl = "https://hub.spigotmc.org/stash/projects/SPIGOT/repos/builddata/browse/"
-    val cacheDir = File("cache/spigot_$buildDataCommit")
+    val cacheDir = File(tmpFolder, "cache/spigot_$buildDataCommit")
     val classMappingsFile = File(cacheDir, "classes.csrg")
     val memberMappingsFile = File(cacheDir, "members.csrg")
     val packageMappingsFile = File(cacheDir, "packages.json")
