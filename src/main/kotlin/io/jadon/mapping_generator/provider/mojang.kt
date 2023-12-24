@@ -1,5 +1,6 @@
 package io.jadon.mapping_generator.provider
 
+import com.google.common.hash.Hashing
 import com.google.gson.JsonParser
 import net.techcable.srglib.format.MappingsFormat
 import net.techcable.srglib.mappings.Mappings
@@ -113,10 +114,20 @@ object MojangMappings {
         }
         val versionJson = URL(versionJsonUrl).loadJson().asJsonObject
         val downloads = versionJson.getAsJsonObject("downloads")
+        val serverMappingsInfo = downloads.getAsJsonObject("server_mappings")
         val serverMappingUrl =
-            URL(downloads.getAsJsonObject("server_mappings")["url"].asString)
+            URL(serverMappingsInfo["url"].asString)
 
         val saveTo = File(folder, "minecraft_server.$version.txt")
+        if (saveTo.exists()) {
+            val hasher = Hashing.sha1().newHasher()
+            hasher.putBytes(saveTo.readBytes())
+            val result = hasher.hash().toString()
+            val mojangResult = serverMappingsInfo.get("sha1").asString
+            if (result.equals(mojangResult)) {
+                return saveTo
+            }
+        }
         serverMappingUrl.downloadTo(saveTo)
         return saveTo
     }
