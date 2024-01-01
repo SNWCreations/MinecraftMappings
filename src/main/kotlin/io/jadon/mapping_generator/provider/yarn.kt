@@ -28,12 +28,25 @@ fun downloadYarn(yarnVersion: String, file: File) {
     URL("https://maven.fabricmc.net/net/fabricmc/yarn/$yarnVersion/yarn-$yarnVersion-tiny.gz").downloadTo(file)
 }
 
+fun getYarnLatestGZFile(outputDir: File, mcVer: String): File {
+    return getYarnGZFile(outputDir, getYarnVersion(mcVer))
+}
+
+fun getYarnGZFile(outputDir: File, yarnVer: String): File {
+    val f = File(outputDir, "yarn-$yarnVer.gz")
+    if (!f.exists()) {
+        downloadYarn(yarnVer, f)
+    }
+    return f
+}
+
 fun getYarnMappings(outputDir: File, minecraftVersion: String): Map<String, Mappings> {
     val yarnMavenVersion = getYarnVersion(minecraftVersion)
-    val yarnZip = File(outputDir, "cache/yarn-$yarnMavenVersion.gz")
-    if (!yarnZip.exists()) {
-        downloadYarn(yarnMavenVersion, yarnZip)
-    }
+    val yarnZip = getYarnGZFile(outputDir, yarnMavenVersion)
+    return loadYarnMap(yarnZip)
+}
+
+fun loadYarnMap(yarnZip: File): Map<String, Mappings> {
     val tinyMappings = io.jadon.mapping_generator.tiny.Mappings()
     GZIPInputStream(yarnZip.inputStream()).use { zip ->
         var namespaces = listOf<String>()
@@ -93,7 +106,7 @@ fun getYarnMappings(outputDir: File, minecraftVersion: String): Map<String, Mapp
         }
     }
     tinyMappings.toMappings().forEach { namespace, mappings ->
-        println("yarn $minecraftVersion $namespace: parsed class=${mappings.classes().size} method=${mappings.fields().size} field=${mappings.methods().size}")
+        println("yarn $namespace: parsed class=${mappings.classes().size} method=${mappings.fields().size} field=${mappings.methods().size}")
     }
     return tinyMappings.toMappings()
 }

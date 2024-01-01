@@ -1,11 +1,18 @@
 package io.jadon.mapping_generator.enums
 
+import cn.hutool.core.util.ZipUtil
 import io.jadon.mapping_generator.SpigotMappingType
 import com.google.common.collect.ImmutableList
+import com.google.common.io.Files
 import net.techcable.srglib.mappings.Mappings
 import io.jadon.mapping_generator.provider.*
 import java.io.File
 import io.jadon.mapping_generator.SpigotMappingType.*
+import net.fabricmc.mappingio.MappingReader
+import net.fabricmc.mappingio.MappingWriter
+import net.fabricmc.mappingio.format.MappingFormat
+import net.fabricmc.mappingio.tree.MemoryMappingTree
+import java.util.zip.GZIPInputStream
 
 enum class MinecraftVersion(
     val mcVersion: String,
@@ -53,7 +60,7 @@ enum class MinecraftVersion(
     V1_2_5("1.2.5", null, false, LEGACY_MCDEV, false, false, false),
 	;
 
-    fun generateMappings(outputDir: File): List<Pair<String, Mappings>> {
+    fun generateMappings(outputDir: File, spigotClsIn: File, spigotMemberIn: File?, yarnIn: File): List<Pair<String, Mappings>> {
         // Mappings, fromObf
         val mappings = mutableListOf<Pair<Mappings, String>>()
 
@@ -69,15 +76,17 @@ enum class MinecraftVersion(
             mappings.add(Pair(obf2mcp, "mcp"))
         }
         if (spigot == SPIGOT || spigot == MODERN_SPIGOT) {
-            val buildDataCommit = getBuildDataCommit(outputDir, mcVersion)
-            val obf2spigotMappings = downloadSpigotMappings(mcVersion, outputDir, buildDataCommit, spigot == MODERN_SPIGOT)
+//            val buildDataCommit = getBuildDataCommit(outputDir, mcVersion)
+//            val obf2spigotMappings = downloadSpigotMappings(mcVersion, outputDir, buildDataCommit, spigot == MODERN_SPIGOT)
+            val obf2spigotMappings = loadSpigotMap(mcVersion, spigotClsIn, spigotMemberIn, outputDir)
             mappings.add(Pair(obf2spigotMappings, "spigot"))
         } else if (spigot == LEGACY_MCDEV) {
 			val obf2mcdevMappings = readMcDevMappings(mcVersion)
 			mappings.add(Pair(obf2mcdevMappings, "spigot"))
 		}
         if (yarn) {
-            val obf2yarnMappingsSet = getYarnMappings(outputDir, mcVersion)
+            val obf2yarnMappingsSet = loadYarnMap(yarnIn)
+//            val obf2yarnMappingsSet = getYarnMappings(outputDir, mcVersion)
             obf2yarnMappingsSet.forEach { id, m -> mappings.add(Pair(m, id)) }
         }
 		if (legacyIntermediary) {
@@ -112,9 +121,13 @@ enum class MinecraftVersion(
         return completeMappings
     }
 
-    fun write(mappingsFolder: File) {
+    fun write(yarnVersion: String, spigotClassIn: File, spigotMemberIn: File?, mappingsFolder: File): File {
         val outputFolder = File(mappingsFolder, mcVersion)
         outputFolder.mkdirs()
+        val yarnV1File = File(outputFolder, "yarn.tiny")
+        val yarnGZ = getYarnGZFile(outputFolder, yarnVersion)
+        yarnV1File.delete()
+        Files.write(ZipUtil.unGzip(GZIPInputStream(yarnGZ.inputStream())), yarnV1File)
 
 //        fun Mappings.writeTo(fileName: String) {
 //            println("$mcVersion: writing mappings to $fileName.srg")
@@ -145,7 +158,7 @@ enum class MinecraftVersion(
 //        }
 
         // srg & tsrg
-        val generatedMappings = generateMappings(outputFolder)
+        val generatedMappings = generateMappings(outputFolder, spigotClassIn, spigotMemberIn, yarnGZ)
 //        generatedMappings.forEach { pair ->
 //            val fileName = pair.first
 //            val mappings = pair.second
@@ -153,20 +166,52 @@ enum class MinecraftVersion(
 //        }
 
         // tiny
-        println("$mcVersion: writing tiny mappings to $mcVersion.tiny")
+        println("$mcVersion: merging mapping")
         val tinyMappings = io.jadon.mapping_generator.tiny.Mappings()
         generatedMappings.filter { it.first.startsWith("obf2") }.forEach { pair ->
             val name = pair.first.split("2")[1]
 
             tinyMappings.addMappings(name, pair.second)
         }
-        File(outputFolder, "$mcVersion.tiny").bufferedWriter().use {
+        val tinyFile = File(outputFolder, "$mcVersion.tiny")
+        tinyFile.bufferedWriter().use {
             for (line in tinyMappings.toStrings()) {
                 it.write(line)
                 it.write("\n")
             }
         }
 
+        // fix field descriptor
+        println("$mcVersion: fixing field descriptors")
+        val tree = MemoryMappingTree()
+        MappingReader.read(tinyFile.toPath(), tree)
+        val yarn = MemoryMappingTree()
+        MappingReader.read(yarnV1File.toPath(), yarn)
+        tinyFile.delete()
+        for (c in tree.classes) {
+            val className = c.srcName
+            val yarnCM = yarn.getClass(className)
+            if (yarnCM == null) { // TODO broken class
+                println("WARN: class mapping not found for ${className}")
+                continue
+            }
+            for (f in ArrayList(c.fields)) {
+                val fieldName = f.srcName
+                for (yf in yarnCM.fields) {
+                    if (yf.srcName.equals(fieldName)) {
+                        f.srcDesc = yf.srcDesc
+                        break
+                    }
+                }
+            }
+        }
+
+
+        println("$mcVersion: writing final tiny mappings to $mcVersion.tiny")
+        val writer = MappingWriter.create(tinyFile.toPath(), MappingFormat.TINY_2_FILE)
+        tree.accept(writer)
+
+        return tinyFile
         // json
 //        val classMappings =
 //            MultimapBuilder.hashKeys(1000).arrayListValues().build<JavaType, Pair<String, JavaType>>()

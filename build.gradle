@@ -20,6 +20,10 @@ repositories {
         name "Modmuss50 Repository"
         url 'https://maven.modmuss50.me'
     }
+    maven {
+        name 'FabricMC'
+        url 'https://maven.fabricmc.net'
+    }
 }
 
 dependencies {
@@ -35,6 +39,9 @@ dependencies {
     include "cuchaz:enigma:0.13.1.+:all"
     include 'org.cadixdev:lorenz:0.5.2'
     include 'org.cadixdev:lorenz-io-proguard:0.5.2'
+    include 'net.fabricmc:mapping-io:0.5.1'
+    include 'net.sf.jopt-simple:jopt-simple:5.0.4'
+    include 'cn.hutool:hutool-core:5.8.16'
 
 	configurations.compile.extendsFrom(configurations.include)
 }
