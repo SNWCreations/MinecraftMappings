@@ -46,9 +46,9 @@ fun getYarnMappings(outputDir: File, minecraftVersion: String): Map<String, Mapp
     return loadYarnMap(yarnZip)
 }
 
-fun loadYarnMap(yarnZip: File): Map<String, Mappings> {
+fun loadYarnMap(yarnFile: File): Map<String, Mappings> {
     val tinyMappings = io.jadon.mapping_generator.tiny.Mappings()
-    GZIPInputStream(yarnZip.inputStream()).use { zip ->
+    yarnFile.inputStream().use { zip ->
         var namespaces = listOf<String>()
         zip.reader().readLines().forEach { line ->
             val parts = line.split("\t")

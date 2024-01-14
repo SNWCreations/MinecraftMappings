@@ -130,9 +130,10 @@ enum class MinecraftVersion(
         val outputFolder = File(mappingsFolder, mcVersion)
         outputFolder.mkdirs()
         val yarnV1File = File(outputFolder, "yarn.tiny")
-        val yarnGZ = getYarnGZFile(outputFolder, yarnVersion)
-        yarnV1File.delete()
-        Files.write(ZipUtil.unGzip(GZIPInputStream(yarnGZ.inputStream())), yarnV1File)
+        if (!yarnV1File.exists()) {
+            val yarnGZ = getYarnGZFile(outputFolder, yarnVersion)
+            Files.write(ZipUtil.unGzip(GZIPInputStream(yarnGZ.inputStream())), yarnV1File)
+        }
 
 //        fun Mappings.writeTo(fileName: String) {
 //            println("$mcVersion: writing mappings to $fileName.srg")
@@ -163,7 +164,7 @@ enum class MinecraftVersion(
 //        }
 
         // srg & tsrg
-        val generatedMappings = generateMappings(outputFolder, spigotClassIn, spigotMemberIn, yarnGZ)
+        val generatedMappings = generateMappings(outputFolder, spigotClassIn, spigotMemberIn, yarnV1File)
 //        generatedMappings.forEach { pair ->
 //            val fileName = pair.first
 //            val mappings = pair.second
