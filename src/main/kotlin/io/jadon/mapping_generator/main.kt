@@ -10,15 +10,16 @@ fun main(args: Array<String>) {
     val time = System.currentTimeMillis()
     GLOBAL_FOLDER.mkdirs()
 	val parser = OptionParser()
-	val mcOpt = parser.accepts("mc").withRequiredArg().ofType(String::class.java)
-	val yarnOpt = parser.accepts("yarn").withRequiredArg().ofType(File::class.java)
-//		val yInOpt = parser.accepts("yarn").withRequiredArg().ofType(File::class.java)
-	val spigotClsOpt = parser.accepts("spigotCls").withRequiredArg().ofType(File::class.java)
-	val spigotMemberIn = parser.accepts("spigotMember").withOptionalArg().ofType(File::class.java)
-
+	val mcOpt = parser.accepts("mc", "The Minecraft version").withRequiredArg().ofType(String::class.java)
+	val yarnOpt = parser.accepts("yarn", "Yarn mapping file path").withRequiredArg().ofType(File::class.java)
+	val spigotClsOpt = parser.accepts("spigotCls", "Spigot class mapping file path").withRequiredArg().ofType(File::class.java)
+	val spigotMemberIn = parser.accepts("spigotMember",
+		"Spigot member mapping file path " +
+				"(not necessary if spigot mapping type of provided Minecraft version is MODERN)")
+		.withOptionalArg().ofType(File::class.java)
 	if (args.isEmpty()) {
 		parser.printHelpOn(System.out)
-		println("Possible values for <minecraftversion> :")
+		println("Possible values for <mc> :")
 		MinecraftVersion.values().forEach {
 			println("\t" + it.mcVersion);
 		}
