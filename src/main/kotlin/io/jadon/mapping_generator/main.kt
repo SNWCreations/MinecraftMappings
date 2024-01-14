@@ -15,13 +15,17 @@ fun main(args: Array<String>) {
 	val spigotClsOpt = parser.accepts("spigotCls", "Spigot class mapping file path").withRequiredArg().ofType(File::class.java)
 	val spigotMemberIn = parser.accepts("spigotMember",
 		"Spigot member mapping file path " +
-				"(not necessary if spigot mapping type of provided Minecraft version is MODERN)")
+				"(will be ignored if spigot mapping type of provided Minecraft version is MODERN)")
 		.withOptionalArg().ofType(File::class.java)
 	if (args.isEmpty()) {
 		parser.printHelpOn(System.out)
 		println("Possible values for <mc> :")
 		MinecraftVersion.values().forEach {
-			println("\t" + it.mcVersion);
+			var line = "\t" + it.mcVersion
+			if (!it.yarn) {
+				line += " (yarn unsupported)"
+			}
+			println(line);
 		}
 	} else {
 		val optSet = parser.parse(*args)
