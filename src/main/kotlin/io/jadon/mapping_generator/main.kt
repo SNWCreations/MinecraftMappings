@@ -11,7 +11,7 @@ fun main(args: Array<String>) {
     GLOBAL_FOLDER.mkdirs()
 	val parser = OptionParser()
 	val mcOpt = parser.accepts("mc").withRequiredArg().ofType(String::class.java)
-	val yarnOpt = parser.accepts("yarn").withRequiredArg().ofType(String::class.java)
+	val yarnOpt = parser.accepts("yarn").withRequiredArg().ofType(File::class.java)
 //		val yInOpt = parser.accepts("yarn").withRequiredArg().ofType(File::class.java)
 	val spigotClsOpt = parser.accepts("spigotCls").withRequiredArg().ofType(File::class.java)
 	val spigotMemberIn = parser.accepts("spigotMember").withOptionalArg().ofType(File::class.java)

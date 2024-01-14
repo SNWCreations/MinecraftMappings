@@ -126,15 +126,17 @@ enum class MinecraftVersion(
         return completeMappings
     }
 
-    fun write(yarnVersion: String, spigotClassIn: File, spigotMemberIn: File?, mappingsFolder: File): File {
+    fun write(yarnFile: File, spigotClassIn: File, spigotMemberIn: File?, mappingsFolder: File): File {
         val outputFolder = File(mappingsFolder, mcVersion)
         outputFolder.mkdirs()
-        val yarnV1File = File(outputFolder, "yarn.tiny")
-        if (!yarnV1File.exists()) {
-            val yarnGZ = getYarnGZFile(outputFolder, yarnVersion)
-            Files.write(ZipUtil.unGzip(GZIPInputStream(yarnGZ.inputStream())), yarnV1File)
+        val finalYarnFile: File
+        if (yarnFile.extension == "gz") {
+            println("Extracting yarn mapping from the GZIP archive provided by user")
+            finalYarnFile = File(outputFolder, "yarn.tiny")
+            Files.write(ZipUtil.unGzip(GZIPInputStream(yarnFile.inputStream())), finalYarnFile)
+        } else {
+            finalYarnFile = yarnFile
         }
-
 //        fun Mappings.writeTo(fileName: String) {
 //            println("$mcVersion: writing mappings to $fileName.srg")
 //            val strippedMappings = stripDuplicates(this)
@@ -164,7 +166,7 @@ enum class MinecraftVersion(
 //        }
 
         // srg & tsrg
-        val generatedMappings = generateMappings(outputFolder, spigotClassIn, spigotMemberIn, yarnV1File)
+        val generatedMappings = generateMappings(outputFolder, spigotClassIn, spigotMemberIn, finalYarnFile)
 //        generatedMappings.forEach { pair ->
 //            val fileName = pair.first
 //            val mappings = pair.second
@@ -215,7 +217,7 @@ enum class MinecraftVersion(
         // fix field descriptor
         println("$mcVersion: fixing field descriptors")
         val yarn = MemoryMappingTree()
-        MappingReader.read(yarnV1File.toPath(), yarn)
+        MappingReader.read(finalYarnFile.toPath(), yarn)
         val tree = MemoryMappingTree()
         MappingReader.read(tinyFile.toPath(), tree)
         tinyFile.delete()
