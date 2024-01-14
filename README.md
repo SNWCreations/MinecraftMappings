@@ -56,7 +56,7 @@ Supported formats:
 - ~~SRG~~ (Disabled)
 - ~~CSRG~~ (Disabled)
 - ~~TSRG~~ (Disabled)
-- Tiny <small>(fields descriptors don't exist)</small>
+- Tiny
 - ~~JSON~~ (Disabled)
 
 These mappings were made possible by @Techcable, the MCP team, Bukkit, SpigotMC, FabricMC, Mojang, and various other people.
