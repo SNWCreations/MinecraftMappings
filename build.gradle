@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'maven-publish'
     id 'org.jetbrains.kotlin.jvm' version '1.3.21'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 group 'io.jadon'
@@ -53,15 +54,30 @@ compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
 
+if (System.getProperty("fatjar") == "true") {
+    jar.enabled = false
+    shadowJar {
+        archiveBaseName = project.name
+        archiveClassifier = null
+        version = project.version
+        manifest {
+            attributes 'Main-Class': 'io.jadon.mapping_generator.MainKt'
+        }
+    }
+    assemble.dependsOn(shadowJar)
+}
+
 jar {
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    manifest {
-        attributes(
-            'Main-Class': 'MainKt'
-        )
-    }
-//    from {
-//        configurations.include.collect { it.isDirectory() ? it : zipTree(it) }
+//    manifest {
+//        attributes(
+//            'Main-Class': 'io.jadon.mapping_generator.MainKt'
+//        )
+//    }
+//    if ("true" == System.getProperty("fatjar")) {
+//        from {
+//            configurations.include.collect { it.isDirectory() ? it : zipTree(it) }
+//        }
 //    }
 }
 
