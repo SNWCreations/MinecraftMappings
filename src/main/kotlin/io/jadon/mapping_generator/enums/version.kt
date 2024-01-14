@@ -60,7 +60,12 @@ enum class MinecraftVersion(
     V1_2_5("1.2.5", null, false, LEGACY_MCDEV, false, false, false),
 	;
 
-    fun generateMappings(outputDir: File, spigotClsIn: File, spigotMemberIn: File?, yarnIn: File): List<Pair<String, Mappings>> {
+    fun generateMappings(
+        outputDir: File,
+        spigotClsIn: File,
+        spigotMemberIn: File?,
+        yarnIn: File
+    ): List<Pair<String, Mappings>> {
         // Mappings, fromObf
         val mappings = mutableListOf<Pair<Mappings, String>>()
 
@@ -174,8 +179,33 @@ enum class MinecraftVersion(
             tinyMappings.addMappings(name, pair.second)
         }
         val tinyFile = File(outputFolder, "$mcVersion.tiny")
+        val clientSpecific = listOf(
+            "com/mojang/blaze3d/",
+            "net/minecraft/client/"
+        )
+        val notClientSide = mutableListOf<String>()
         tinyFile.bufferedWriter().use {
             for (line in tinyMappings.toStrings()) {
+                var clientSide = false
+                if (clientSpecific.any { n -> line.contains(n) }) {
+                    val split = line.split("\t")
+                    when (split[0]) {
+                        "CLASS" -> {
+                            clientSide = split[1] == split[2]
+                            if (!clientSide) {
+                                notClientSide.add(split[1])
+                            }
+                        }
+
+                        "FIELD", "METHOD" -> {
+                            clientSide = !notClientSide.contains(split[1])
+                        }
+                    }
+                }
+                if (clientSide) {
+                    println("$mcVersion: ignoring client-side content: $line")
+                    continue
+                }
                 it.write(line)
                 it.write("\n")
             }
@@ -183,28 +213,85 @@ enum class MinecraftVersion(
 
         // fix field descriptor
         println("$mcVersion: fixing field descriptors")
-        val tree = MemoryMappingTree()
-        MappingReader.read(tinyFile.toPath(), tree)
         val yarn = MemoryMappingTree()
         MappingReader.read(yarnV1File.toPath(), yarn)
+        val tree = MemoryMappingTree()
+        MappingReader.read(tinyFile.toPath(), tree)
         tinyFile.delete()
+        val spigotNamespaceId = tree.getNamespaceId("spigot")
+        val srcNameField = Class.forName("net.fabricmc.mappingio.tree.MemoryMappingTree\$Entry")
+            .getDeclaredField("srcName")
+        srcNameField.isAccessible = true
         for (c in tree.classes) {
             val className = c.srcName
-            val yarnCM = yarn.getClass(className)
-            if (yarnCM == null) { // TODO broken class
-                println("WARN: class mapping not found for ${className}")
-                continue
-            }
-            for (f in ArrayList(c.fields)) {
-                val fieldName = f.srcName
-                for (yf in yarnCM.fields) {
-                    if (yf.srcName.equals(fieldName)) {
-                        f.srcDesc = yf.srcDesc
-                        break
+            var yarnCM = yarn.getClass(className)
+            if (yarnCM == null) {
+                println("Attempting to fix parent name for $className")
+
+                val split = className.split("$").toMutableList()
+                val thing = split.removeAt(0)
+                var theThing = tree.getClass(thing, spigotNamespaceId)
+                var fail = false
+                if (theThing != null) {
+                    while (split.isNotEmpty()) {
+                        val child = split.removeAt(0);
+                        val parentSrcName = theThing!!.srcName
+                        var concatName = "$parentSrcName$$child"
+                        var lookup = tree.getClass(concatName) // we think it is obf name
+                        if (lookup == null) { // no?
+                            println("Could not find the class mapping object of $concatName in obfuscated namespace, trying Spigot name")
+                            // maybe Spigot name?
+                            concatName = theThing.getDstName(spigotNamespaceId)!! + "$" + child
+                            lookup = tree.getClass(concatName, spigotNamespaceId)
+                            if (lookup == null) {
+                                fail = true
+                                break
+                            } else { // good
+                                println("Found good parent: $lookup")
+                                theThing = lookup
+                            }
+                        } else { // good
+                            println("Found good parent: $lookup")
+                            theThing = lookup
+                        }
+                    }
+                } else {
+                    fail = true
+                }
+                if (fail) {
+                    println("WARN: class mapping not found for ${className}")
+                    continue
+                } else {
+                    yarnCM = yarn.getClass(theThing!!.srcName)
+                    if (yarnCM == null) {
+                        println("WARN: class mapping not found for ${className}")
+                        continue
+                    } else {
+                        val srcName = yarnCM.srcName
+                        println("Fixed $className -> $srcName")
+                        srcNameField.set(c, srcName)
+                        c.setDstName(className, spigotNamespaceId)
                     }
                 }
             }
+            for (f in ArrayList(c.fields)) {
+                val fieldName = f.srcName
+                println("Fixing $fieldName in $c")
+                var fieldNotFound = true
+                for (yf in yarnCM.fields) {
+                    if (yf.srcName.equals(fieldName)) {
+                        f.srcDesc = yf.srcDesc
+                        fieldNotFound = false
+                        println("Fixed $fieldName's descriptor, new descriptor: ${yf.srcDesc}")
+                        break
+                    }
+                }
+                if (fieldNotFound) {
+                    println("WARN: could not fix field descriptor for field $fieldName in $c: field not found")
+                }
+            }
         }
+
 
 
         println("$mcVersion: writing final tiny mappings to $mcVersion.tiny")
@@ -277,8 +364,10 @@ enum class MinecraftVersion(
             }
             mcVersionToEnumValue = map.toMap()
         }
+
         @JvmStatic
         fun findByMCVersion(
-            mcVersion: String) = mcVersionToEnumValue[mcVersion]
+            mcVersion: String
+        ) = mcVersionToEnumValue[mcVersion]
     }
 }
