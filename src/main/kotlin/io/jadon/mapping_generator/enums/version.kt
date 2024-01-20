@@ -91,10 +91,10 @@ enum class MinecraftVersion(
 			mappings.add(Pair(obf2mcdevMappings, "spigot"))
 		}
         if (yarn) {
+            val format = MappingReader.detectFormat(yarnIn.toPath())
             Preconditions.checkArgument(
-                MappingReader.detectFormat(yarnIn.toPath())
-                        == MappingFormat.TINY_2_FILE,
-                "Provided yarn mappings must use TINY v1 format"
+                format == MappingFormat.TINY_FILE,
+                "Provided yarn mappings must use TINY v1 format, but we got $format"
             )
             val obf2yarnMappingsSet = loadYarnMap(yarnIn)
 //            val obf2yarnMappingsSet = getYarnMappings(outputDir, mcVersion)
