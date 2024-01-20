@@ -1,6 +1,7 @@
 package io.jadon.mapping_generator.enums
 
 import cn.hutool.core.util.ZipUtil
+import com.google.common.base.Preconditions
 import io.jadon.mapping_generator.SpigotMappingType
 import com.google.common.collect.ImmutableList
 import com.google.common.io.Files
@@ -90,6 +91,11 @@ enum class MinecraftVersion(
 			mappings.add(Pair(obf2mcdevMappings, "spigot"))
 		}
         if (yarn) {
+            Preconditions.checkArgument(
+                MappingReader.detectFormat(yarnIn.toPath())
+                        == MappingFormat.TINY_2_FILE,
+                "Provided yarn mappings must use TINY v1 format"
+            )
             val obf2yarnMappingsSet = loadYarnMap(yarnIn)
 //            val obf2yarnMappingsSet = getYarnMappings(outputDir, mcVersion)
             obf2yarnMappingsSet.forEach { id, m -> mappings.add(Pair(m, id)) }
