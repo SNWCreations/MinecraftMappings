@@ -125,15 +125,14 @@ val brokenLines = setOf(
 
 fun stripBrokenLines(lines: List<String>) = lines.filter { it !in brokenLines && "<init>" !in it }
 
-fun loadSpigotMap(mcVer: String, cls: File, member: File?, tmpDir: File): Mappings {
+fun loadSpigotMap(mcVer: String, cls: File, member: File?, mojIn: File?, tmpDir: File): Mappings {
     val clsMap = MappingsFormat.COMPACT_SEARGE_FORMAT.parseFile(cls)
     val memberMap: Mappings
     if (member == null) {
-        val serverMojMap = MojangMappings.downloadServerMojmap(mcVer, tmpDir)
         val mapUtil = MapUtil()
         mapUtil.loadBuk(cls)
         val savedMemberMap = File(tmpDir, "bukkit-$mcVer-members.csrg")
-        mapUtil.makeFieldMaps(serverMojMap, savedMemberMap, true)
+        mapUtil.makeFieldMaps(mojIn!!, savedMemberMap, true)
         memberMap = MappingsFormat.COMPACT_SEARGE_FORMAT.parseFile(savedMemberMap)
     } else {
         memberMap = MappingsFormat.COMPACT_SEARGE_FORMAT.parseFile(member)

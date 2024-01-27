@@ -17,6 +17,7 @@ fun main(args: Array<String>) {
 		"Spigot member mapping file path " +
 				"(will be ignored if spigot mapping type of provided Minecraft version is MODERN)")
 		.withOptionalArg().ofType(File::class.java)
+	val mojIn = parser.accepts("mojIn", "Mojang mapping which will be used if spigot member mapping does not exist").withOptionalArg().ofType(File::class.java)
 	if (args.isEmpty()) {
 		parser.printHelpOn(System.out)
 		println("Possible values for <mc> :")
@@ -30,7 +31,7 @@ fun main(args: Array<String>) {
 	} else {
 		val optSet = parser.parse(*args)
 
-	    MinecraftVersion.findByMCVersion(optSet.valueOf(mcOpt))!!.write(optSet.valueOf(yarnOpt), optSet.valueOf(spigotClsOpt), optSet.valueOf(spigotMemberIn), GLOBAL_FOLDER)
+	    MinecraftVersion.findByMCVersion(optSet.valueOf(mcOpt))!!.write(optSet.valueOf(yarnOpt), optSet.valueOf(spigotClsOpt), optSet.valueOf(spigotMemberIn), optSet.valueOf(mojIn), GLOBAL_FOLDER)
         val elapsed = (System.currentTimeMillis() - time) / 1000.0
         println("Done. Took ${elapsed / 60}m (${elapsed}s)")
 	}
