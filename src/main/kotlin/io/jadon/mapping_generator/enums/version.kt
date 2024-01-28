@@ -13,6 +13,8 @@ import net.fabricmc.mappingio.MappingReader
 import net.fabricmc.mappingio.MappingWriter
 import net.fabricmc.mappingio.format.MappingFormat
 import net.fabricmc.mappingio.tree.MemoryMappingTree
+import net.techcable.srglib.JavaType
+import net.techcable.srglib.format.MappingsFormat
 import java.util.zip.GZIPInputStream
 
 enum class MinecraftVersion(
@@ -92,12 +94,21 @@ enum class MinecraftVersion(
 			mappings.add(Pair(obf2mcdevMappings, "spigot"))
 		}
         if (yarn) {
+            val toLoad: File
             val format = MappingReader.detectFormat(yarnIn.toPath())
-            Preconditions.checkArgument(
-                format == MappingFormat.TINY_FILE,
-                "Provided yarn mappings must use TINY v1 format, but we got $format"
-            )
-            val obf2yarnMappingsSet = loadYarnMap(yarnIn)
+            if (format != MappingFormat.TINY_FILE) {
+                println("Trying to convert user provided Yarn mapping to v1 format")
+                val map = MemoryMappingTree()
+                MappingReader.read(yarnIn.toPath(), map)
+                val reformatted = File(outputDir, "reformatted.tiny")
+                val writer = MappingWriter.create(reformatted.toPath(), MappingFormat.TINY_FILE)!!
+                map.accept(writer)
+                writer.close()
+                toLoad = reformatted
+            } else {
+                toLoad = yarnIn
+            }
+            val obf2yarnMappingsSet = loadYarnMap(toLoad)
 //            val obf2yarnMappingsSet = getYarnMappings(outputDir, mcVersion)
             obf2yarnMappingsSet.forEach { id, m -> mappings.add(Pair(m, id)) }
         }
@@ -189,55 +200,72 @@ enum class MinecraftVersion(
             tinyMappings.addMappings(name, pair.second)
         }
         val tinyFile = File(outputFolder, "$mcVersion.tiny")
+        val spigotClassMap = MappingsFormat.COMPACT_SEARGE_FORMAT.parseFile(spigotClassIn)
         val clientSpecific = listOf(
             "com/mojang/blaze3d/",
             "net/minecraft/client/"
         )
-        val notClientSide = mutableListOf<String>()
+//        val notClientSide = mutableListOf<String>()
         tinyFile.bufferedWriter().use {
             for (line in tinyMappings.toStrings()) {
-                var clientSide = false
-                if (clientSpecific.any { n -> line.contains(n) }) {
+                val clientSide: Boolean
+                if (line.startsWith("v1")) {
+                    clientSide = false
+                } else {
                     val split = line.split("\t")
-                    when (split[0]) {
-                        "CLASS" -> {
-                            clientSide = split[1] == split[2]
-                            if (!clientSide) {
-                                notClientSide.add(split[1])
-                            }
+                    val className = split[1]
+                    if (className.contains("/")) {
+                        clientSide = clientSpecific.any {className.startsWith(it)}
+                    } else {
+                        val toCompare = if (className.contains("$")) {
+                            className.substring(0, className.indexOf("$"))
+                        } else {
+                            className
                         }
-
-                        "FIELD", "METHOD" -> {
-                            clientSide = !notClientSide.contains(split[1])
-                        }
+                        clientSide = !spigotClassMap.contains(JavaType.fromInternalName(toCompare))
                     }
                 }
+//                when (split[0]) {
+//                    "CLASS" -> {
+//                        clientSide = split[1] == split[2]
+//                        if (!clientSide) {
+//                            notClientSide.add(split[1])
+//                        }
+//                    }
+//
+//                    "FIELD", "METHOD" -> {
+//                        clientSide = !notClientSide.contains(split[1])
+//                    }
+//                }
                 if (clientSide) {
                     println("$mcVersion: ignoring client-side content: $line")
-                    continue
+                } else {
+                    it.write(line)
+                    it.write("\n")
                 }
-                it.write(line)
-                it.write("\n")
             }
+            it.flush() // ensure data written
         }
 
         // fix field descriptor
-        println("$mcVersion: fixing field descriptors")
+        println("$mcVersion: fixing broken data")
         val yarn = MemoryMappingTree()
         MappingReader.read(finalYarnFile.toPath(), yarn)
         val tree = MemoryMappingTree()
         MappingReader.read(tinyFile.toPath(), tree)
         tinyFile.delete()
         val spigotNamespaceId = tree.getNamespaceId("spigot")
-        val srcNameField = Class.forName("net.fabricmc.mappingio.tree.MemoryMappingTree\$Entry")
-            .getDeclaredField("srcName")
+        val clsEntry = Class.forName("net.fabricmc.mappingio.tree.MemoryMappingTree\$Entry")
+        val srcNameField = clsEntry.getDeclaredField("srcName")
         srcNameField.isAccessible = true
+        val intermediaryIdInYarn = yarn.getNamespaceId("intermediary")
+        val yarnIdInYarn = yarn.getNamespaceId("named")
+        val intermediaryIdInTree = tree.getNamespaceId("intermediary")
+        val yarnIdInTree = tree.getNamespaceId("yarn")
         for (c in tree.classes) {
             val className = c.srcName
             var yarnCM = yarn.getClass(className)
             if (yarnCM == null) {
-                println("Attempting to fix parent name for $className")
-
                 val split = className.split("$").toMutableList()
                 val thing = split.removeAt(0)
                 var theThing = tree.getClass(thing, spigotNamespaceId)
@@ -249,7 +277,6 @@ enum class MinecraftVersion(
                         var concatName = "$parentSrcName$$child"
                         var lookup = tree.getClass(concatName) // we think it is obf name
                         if (lookup == null) { // no?
-                            println("Could not find the class mapping object of $concatName in obfuscated namespace, trying Spigot name")
                             // maybe Spigot name?
                             concatName = theThing.getDstName(spigotNamespaceId)!! + "$" + child
                             lookup = tree.getClass(concatName, spigotNamespaceId)
@@ -257,11 +284,9 @@ enum class MinecraftVersion(
                                 fail = true
                                 break
                             } else { // good
-                                println("Found good parent: $lookup")
                                 theThing = lookup
                             }
                         } else { // good
-                            println("Found good parent: $lookup")
                             theThing = lookup
                         }
                     }
@@ -278,33 +303,51 @@ enum class MinecraftVersion(
                         continue
                     } else {
                         val srcName = yarnCM.srcName
-                        println("Fixed $className -> $srcName")
                         srcNameField.set(c, srcName)
                         c.setDstName(className, spigotNamespaceId)
                     }
                 }
             }
+            // copy names from yarn tree
+            val intermediary = yarnCM.getDstName(intermediaryIdInYarn)
+            val yarnName = yarnCM.getDstName(yarnIdInYarn)
+            c.setDstName(intermediary, intermediaryIdInTree)
+            c.setDstName(yarnName, yarnIdInTree)
             for (f in ArrayList(c.fields)) {
                 val fieldName = f.srcName
-                println("Fixing $fieldName in $c")
                 var fieldNotFound = true
                 for (yf in yarnCM.fields) {
-                    if (yf.srcName.equals(fieldName)) {
+                    if (yf.srcName == fieldName) {
                         f.srcDesc = yf.srcDesc
+                        f.setDstName(yf.getDstName(intermediaryIdInYarn), intermediaryIdInTree)
+                        f.setDstName(yf.getDstName(yarnIdInYarn), yarnIdInTree)
                         fieldNotFound = false
-                        println("Fixed $fieldName's descriptor, new descriptor: ${yf.srcDesc}")
                         break
                     }
                 }
                 if (fieldNotFound) {
-                    println("WARN: could not fix field descriptor for field $fieldName in $c: field not found")
+                    println("WARN: could not fix field $fieldName in $c: field not found")
+                }
+            }
+            for (m in ArrayList(c.methods)) {
+                val methodName = m.srcName
+                var methodNotFound = true
+                for (ym in yarnCM.methods) {
+                    if (ym.srcName == methodName) {
+                        m.setDstName(ym.getDstName(intermediaryIdInYarn), intermediaryIdInTree)
+                        m.setDstName(ym.getDstName(yarnIdInYarn), yarnIdInTree)
+                        methodNotFound = false
+                        break
+                    }
+                }
+                if (methodNotFound) {
+                    println("WARN: could not fix method $methodName in $c: method not found")
                 }
             }
         }
 
-
-
         println("$mcVersion: writing final tiny mappings to $mcVersion.tiny")
+
         val writer = MappingWriter.create(tinyFile.toPath(), MappingFormat.TINY_2_FILE)
         tree.accept(writer)
 
