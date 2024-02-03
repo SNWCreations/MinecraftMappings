@@ -66,8 +66,7 @@ enum class MinecraftVersion(
     fun generateMappings(
         outputDir: File,
         spigotClsIn: File,
-        spigotMemberIn: File?,
-        mojIn: File?,
+        spigotMemberIn: File,
         yarnIn: File
     ): List<Pair<String, Mappings>> {
         // Mappings, fromObf
@@ -87,7 +86,7 @@ enum class MinecraftVersion(
         if (spigot == SPIGOT || spigot == MODERN_SPIGOT) {
 //            val buildDataCommit = getBuildDataCommit(outputDir, mcVersion)
 //            val obf2spigotMappings = downloadSpigotMappings(mcVersion, outputDir, buildDataCommit, spigot == MODERN_SPIGOT)
-            val obf2spigotMappings = loadSpigotMap(mcVersion, spigotClsIn, spigotMemberIn, mojIn, outputDir)
+            val obf2spigotMappings = loadSpigotMap(spigotClsIn, spigotMemberIn)
             mappings.add(Pair(obf2spigotMappings, "spigot"))
         } else if (spigot == LEGACY_MCDEV) {
 			val obf2mcdevMappings = readMcDevMappings(mcVersion)
@@ -144,7 +143,7 @@ enum class MinecraftVersion(
         return completeMappings
     }
 
-    fun write(yarnFile: File, spigotClassIn: File, spigotMemberIn: File?, mojIn: File, mappingsFolder: File): File {
+    fun write(yarnFile: File, spigotClassIn: File, spigotMemberIn: File, mappingsFolder: File): File {
         val outputFolder = File(mappingsFolder, mcVersion)
         outputFolder.mkdirs()
         val finalYarnFile: File
@@ -184,7 +183,7 @@ enum class MinecraftVersion(
 //        }
 
         // srg & tsrg
-        val generatedMappings = generateMappings(outputFolder, spigotClassIn, spigotMemberIn, mojIn, finalYarnFile)
+        val generatedMappings = generateMappings(outputFolder, spigotClassIn, spigotMemberIn, finalYarnFile)
 //        generatedMappings.forEach { pair ->
 //            val fileName = pair.first
 //            val mappings = pair.second
