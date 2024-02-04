@@ -1,20 +1,28 @@
 package io.jadon.mapping_generator.enums
 
 import cn.hutool.core.util.ZipUtil
-import com.google.common.base.Preconditions
-import io.jadon.mapping_generator.SpigotMappingType
 import com.google.common.collect.ImmutableList
+import com.google.common.io.ByteStreams
 import com.google.common.io.Files
-import net.techcable.srglib.mappings.Mappings
-import io.jadon.mapping_generator.provider.*
-import java.io.File
+import io.jadon.mapping_generator.SpigotMappingType
 import io.jadon.mapping_generator.SpigotMappingType.*
+import io.jadon.mapping_generator.provider.*
 import net.fabricmc.mappingio.MappingReader
 import net.fabricmc.mappingio.MappingWriter
 import net.fabricmc.mappingio.format.MappingFormat
+import net.fabricmc.mappingio.tree.MappingTree
+import net.fabricmc.mappingio.tree.MappingTree.FieldMapping
+import net.fabricmc.mappingio.tree.MappingTree.MethodMapping
 import net.fabricmc.mappingio.tree.MemoryMappingTree
 import net.techcable.srglib.JavaType
 import net.techcable.srglib.format.MappingsFormat
+import net.techcable.srglib.mappings.Mappings
+import org.cadixdev.bombe.type.*
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.Opcodes
+import java.io.File
+import java.util.jar.JarFile
 import java.util.zip.GZIPInputStream
 
 enum class MinecraftVersion(
@@ -143,7 +151,7 @@ enum class MinecraftVersion(
         return completeMappings
     }
 
-    fun write(yarnFile: File, spigotClassIn: File, spigotMemberIn: File, mappingsFolder: File): File {
+    fun write(yarnFile: File, spigotClassIn: File, spigotMemberIn: File, yarnMappedMCJar: File?, mappingsFolder: File): File {
         val outputFolder = File(mappingsFolder, mcVersion)
         outputFolder.mkdirs()
         val finalYarnFile: File
@@ -205,6 +213,7 @@ enum class MinecraftVersion(
             "net/minecraft/client/"
         )
 //        val notClientSide = mutableListOf<String>()
+        val detectedClientSide = mutableListOf<String>()
         tinyFile.bufferedWriter().use {
             for (line in tinyMappings.toStrings()) {
                 val clientSide: Boolean
@@ -212,16 +221,20 @@ enum class MinecraftVersion(
                     clientSide = false
                 } else {
                     val split = line.split("\t")
-                    val className = split[1]
+                    var className = split[1]
                     if (className.contains("/")) {
                         clientSide = clientSpecific.any {className.startsWith(it)}
                     } else {
-                        val toCompare = if (className.contains("$")) {
+                        className = if (className.contains("$")) {
                             className.substring(0, className.indexOf("$"))
                         } else {
                             className
                         }
-                        clientSide = !spigotClassMap.contains(JavaType.fromInternalName(toCompare))
+                        clientSide = detectedClientSide.contains(className)
+                                || !spigotClassMap.contains(JavaType.fromInternalName(className))
+                    }
+                    if (clientSide) {
+                        detectedClientSide.add(className)
                     }
                 }
 //                when (split[0]) {
@@ -261,41 +274,25 @@ enum class MinecraftVersion(
         val yarnIdInYarn = yarn.getNamespaceId("named")
         val intermediaryIdInTree = tree.getNamespaceId("intermediary")
         val yarnIdInTree = tree.getNamespaceId("yarn")
+
+        val mcJar: JarFile?
+        val preloadedMcClass = HashMap<String, ClassReader>()
+        if (yarnMappedMCJar != null) {
+            mcJar = JarFile(yarnMappedMCJar)
+        } else {
+            mcJar = null
+        }
+
         for (c in tree.classes) {
             val className = c.srcName
             var yarnCM = yarn.getClass(className)
             if (yarnCM == null) {
-                val split = className.split("$").toMutableList()
-                val thing = split.removeAt(0)
-                var theThing = tree.getClass(thing, spigotNamespaceId)
-                var fail = false
-                if (theThing != null) {
-                    while (split.isNotEmpty()) {
-                        val child = split.removeAt(0);
-                        val parentSrcName = theThing!!.srcName
-                        var concatName = "$parentSrcName$$child"
-                        var lookup = tree.getClass(concatName) // we think it is obf name
-                        if (lookup == null) { // no?
-                            // maybe Spigot name?
-                            concatName = theThing.getDstName(spigotNamespaceId)!! + "$" + child
-                            lookup = tree.getClass(concatName, spigotNamespaceId)
-                            if (lookup == null) {
-                                fail = true
-                                break
-                            } else { // good
-                                theThing = lookup
-                            }
-                        } else { // good
-                            theThing = lookup
-                        }
-                    }
-                } else {
-                    fail = true
-                }
-                if (fail) {
+                val remappedName = spigot2obf(className, tree, spigotNamespaceId)
+                if (remappedName == null) {
                     println("WARN: class mapping not found for ${className}")
                     continue
                 } else {
+                    val theThing = tree.getClass(remappedName)
                     yarnCM = yarn.getClass(theThing!!.srcName)
                     if (yarnCM == null) {
                         println("WARN: class mapping not found for ${className}")
@@ -309,7 +306,7 @@ enum class MinecraftVersion(
             }
             // copy names from yarn tree
             val intermediary = yarnCM.getDstName(intermediaryIdInYarn)
-            val yarnName = yarnCM.getDstName(yarnIdInYarn)
+            val yarnName = yarnCM.getDstName(yarnIdInYarn)!!
             c.setDstName(intermediary, intermediaryIdInTree)
             c.setDstName(yarnName, yarnIdInTree)
             for (f in ArrayList(c.fields)) {
@@ -325,23 +322,59 @@ enum class MinecraftVersion(
                     }
                 }
                 if (fieldNotFound) {
-                    println("WARN: could not fix field $fieldName in $c: field not found")
+                    if (mcJar != null) {
+                        val field = lookupFieldOrSuper(yarnName, yarnName, fieldName, mcJar, preloadedMcClass, yarn, yarnIdInYarn)
+                        f.srcDesc = field.srcDesc
+                        f.setDstName(field.getDstName(intermediaryIdInYarn), intermediaryIdInTree)
+                        f.setDstName(field.getDstName(yarnIdInYarn), yarnIdInTree)
+                    } else {
+                        println("WARN: could not fix field $fieldName in $c: field not found")
+                    }
                 }
             }
             for (m in ArrayList(c.methods)) {
                 val methodName = m.srcName
-                var methodNotFound = true
-                for (ym in yarnCM.methods) {
-                    if (ym.srcName == methodName) {
-                        m.setDstName(ym.getDstName(intermediaryIdInYarn), intermediaryIdInTree)
-                        m.setDstName(ym.getDstName(yarnIdInYarn), yarnIdInTree)
-                        methodNotFound = false
-                        break
+                var methodDesc = m.srcDesc!!
+//                var methodNotFound = true
+                var ym = yarnCM.getMethod(methodName, methodDesc)
+                if (ym == null) {
+                    if (mcJar != null) {
+                        val parsedDesc = MethodDescriptor.of(methodDesc)
+                        val remappedParamTypes = mutableListOf<FieldType>()
+                        for (paramType in parsedDesc.paramTypes) {
+                            val remapped = paramType.spigot2obf(tree, spigotNamespaceId)
+                            remappedParamTypes.add(remapped as FieldType)
+                        }
+                        val ret = parsedDesc.returnType.spigot2obf(tree, spigotNamespaceId)
+                        methodDesc = MethodDescriptor(remappedParamTypes, ret).toString()
+                        ym = lookupMethodOrSuper(yarnName, yarnName, methodName, methodDesc, mcJar, preloadedMcClass, yarn, yarnIdInYarn)
                     }
                 }
-                if (methodNotFound) {
+                if (ym != null) {
+                    val realM: MethodMapping
+                    if (ym.srcName != methodName) {
+                        var relocatedM = c.getMethod(ym.srcName, methodDesc)
+                        if (relocatedM == null) {
+                            srcNameField.set(m, ym.srcName)
+                            relocatedM = m
+                        }
+                        realM = relocatedM!!
+                    } else {
+                        realM = m
+                    }
+                    realM.setDstName(ym.getDstName(intermediaryIdInYarn), intermediaryIdInTree)
+                    realM.setDstName(ym.getDstName(yarnIdInYarn), yarnIdInTree)
+                } else {
                     println("WARN: could not fix method $methodName in $c: method not found")
                 }
+//                for (ym in yarnCM.methods) {
+//                    if (ym.srcName == methodName) {
+//                        m.setDstName(ym.getDstName(intermediaryIdInYarn), intermediaryIdInTree)
+//                        m.setDstName(ym.getDstName(yarnIdInYarn), yarnIdInTree)
+//                        methodNotFound = false
+//                        break
+//                    }
+//                }
             }
         }
 
@@ -421,5 +454,142 @@ enum class MinecraftVersion(
         fun findByMCVersion(
             mcVersion: String
         ) = mcVersionToEnumValue[mcVersion]
+    }
+}
+
+fun readClass(jar: JarFile, internalName: String): ClassReader {
+    val entry = jar.getJarEntry("$internalName.class")
+    val stream = jar.getInputStream(entry)
+    val bytes = ByteStreams.toByteArray(stream)
+    val reader = ClassReader(bytes)
+    val visitor = object : ClassVisitor(Opcodes.ASM9) {}
+    reader.accept(visitor, ClassReader.SKIP_CODE)
+    return reader
+}
+
+fun lookupFieldOrSuper(start: String,
+                       original: String,
+                       fieldName: String,
+                       jar: JarFile,
+                       cache: HashMap<String, ClassReader>,
+                       yarn: MappingTree,
+                       yarnNamespaceId: Int): FieldMapping {
+    val reader = cache.computeIfAbsent(start) { readClass(jar, start) }
+    val superC = reader.superName
+    if (superC.startsWith("java/lang/")) {
+        throw IllegalArgumentException("Field $fieldName not found in $original")
+    }
+    val superCMap = yarn.getClass(superC, yarnNamespaceId)!!
+    for (field in superCMap.fields) {
+        if (field.srcName == fieldName) {
+            return field
+        }
+    }
+    return lookupFieldOrSuper(superC, original, fieldName, jar, cache, yarn, yarnNamespaceId)
+}
+
+fun lookupMethodOrSuper(start: String,
+                        original: String,
+                        methodName: String,
+                        methodDesc: String,
+                        jar: JarFile,
+                        cache: HashMap<String, ClassReader>,
+                        yarn: MappingTree,
+                        yarnNamespaceId: Int): MethodMapping? {
+    if (!start.startsWith("net/minecraft/")) {
+//        throw IllegalArgumentException("Method $methodName not found in $original")
+        println("WARN: reached $start, not possible to lookup method")
+        return null
+    }
+    val reader = cache.computeIfAbsent(start) { readClass(jar, start) }
+    val superCMap = yarn.getClass(start, yarnNamespaceId)
+    if (superCMap == null) {
+        println("WARN: could not lookup method $methodName (desc $methodDesc) in $original: super class $start not found")
+        return null
+    }
+    val method = superCMap.getMethod(methodName, methodDesc)
+    if (method != null) {
+        return method
+    } else {
+        if (methodName == "a") { // might be <init>
+            val init = superCMap.getMethod("<init>", methodDesc)
+            if (init != null) {
+                println("WARN: returning $init because 'a' might refers to '<init>'!")
+                return init
+            }
+        }
+        // scan implemented interface, if any
+        for (interfaceName in reader.interfaces) {
+            val scan = lookupMethodOrSuper(interfaceName, original, methodName, methodDesc, jar, cache, yarn, yarnNamespaceId)
+            if (scan != null) {
+                return scan
+            }
+        }
+        println("WARN: method $methodName (desc $methodDesc) not found in $start, now scanning super")
+    }
+//    for (method in superCMap.methods) {
+//        if (method.srcName == methodName) {
+//            return method
+//        }
+//    }
+    return lookupMethodOrSuper(reader.superName, original, methodName, methodDesc, jar, cache, yarn, yarnNamespaceId)
+}
+
+// return null if could not remap
+fun spigot2obf(className: String, tree: MappingTree, spigotNamespaceId: Int): String? {
+    val split = className.split("$").toMutableList()
+    val thing = split.removeAt(0)
+    var theThing = tree.getClass(thing, spigotNamespaceId)
+    var fail = false
+    if (theThing != null) {
+        while (split.isNotEmpty()) {
+            val child = split.removeAt(0);
+            val parentSrcName = theThing!!.srcName
+            var concatName = "$parentSrcName$$child"
+            var lookup = tree.getClass(concatName) // we think it is obf name
+            if (lookup == null) { // no?
+                // maybe Spigot name?
+                concatName = theThing.getDstName(spigotNamespaceId)!! + "$" + child
+                lookup = tree.getClass(concatName, spigotNamespaceId)
+                if (lookup == null) {
+                    fail = true
+                    break
+                } else { // good
+                    theThing = lookup
+                }
+            } else { // good
+                theThing = lookup
+            }
+        }
+    } else {
+        fail = true
+    }
+    return if (fail) {
+        null
+    } else {
+        theThing!!.srcName
+    }
+}
+
+fun Type.spigot2obf(tree: MappingTree, namespaceId: Int): Type {
+    when (this) {
+        is ObjectType -> {
+            val name = className
+            val remapped = spigot2obf(name, tree, namespaceId) ?: return this
+            return ObjectType(remapped)
+        }
+
+        is ArrayType -> {
+            return if (component is ObjectType) {
+                val remapped = component.spigot2obf(tree, namespaceId)
+                ArrayType(dimCount, remapped as FieldType)
+            } else {
+                this
+            }
+        }
+
+        else -> {
+            return this
+        }
     }
 }
