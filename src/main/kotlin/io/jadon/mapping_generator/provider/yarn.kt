@@ -1,13 +1,13 @@
 package io.jadon.mapping_generator.provider
 
-import cuchaz.enigma.ProgressListener
-import cuchaz.enigma.translation.mapping.serde.MappingFormat
-import net.techcable.srglib.format.MappingsFormat
+//import cuchaz.enigma.ProgressListener
+//import cuchaz.enigma.translation.mapping.serde.MappingFormat
+//import net.techcable.srglib.format.MappingsFormat
 import net.techcable.srglib.mappings.Mappings
 import java.io.File
 import java.net.URL
 import java.util.concurrent.TimeUnit
-import java.util.zip.GZIPInputStream
+//import java.util.zip.GZIPInputStream
 
 fun String.runCommand(workingDir: File) {
     ProcessBuilder(*split(" ").toTypedArray())
@@ -111,31 +111,31 @@ fun loadYarnMap(yarnFile: File): Map<String, Mappings> {
     return tinyMappings.toMappings()
 }
 
-fun getYarnMappingsFromSubmodule(minecraftVersion: String): Mappings {
-    val yarnFolder = File("yarn")
-    val mappingsFile = File("cache/yarn-$minecraftVersion.srg")
-    if (mappingsFile.exists()) {
-        println("yarn $minecraftVersion: yarn-$minecraftVersion.srg already exists")
-        return MappingsFormat.SEARGE_FORMAT.parseFile(mappingsFile)
-    }
-
-    println("yarn $minecraftVersion: checking out branch $minecraftVersion")
-    "git checkout $minecraftVersion".runCommand(yarnFolder)
-
-    println("yarn $minecraftVersion: reading mappings directory")
-    val entryTree = MappingFormat.ENIGMA_DIRECTORY.read(File(yarnFolder, "mappings").toPath(), ProgressListener.VOID)
-    println("yarn $minecraftVersion: writing mappings to srg")
-    MappingFormat.SRG_FILE.write(entryTree, mappingsFile.toPath(), ProgressListener.VOID)
-
-    // TODO: fix these
-    val brokenClasses = listOf(
-        "<init>", "WoodlandMansionGenerator",
-        "VoxelSet", "ParticleManager", "PointOfInterestDebugRenderer", "NumberRange", "ServerLightingProvider",
-        "SpellcastingIllagerEntity", "NetherFortressGenerator", "TextureUtil"
-    )
-    mappingsFile.writeText(mappingsFile.readLines().filter {
-        brokenClasses.map { b -> !it.contains(b) }.foldRight(true) { a, b -> a && b }
-    }.joinToString("\n"))
-
-    return MappingsFormat.SEARGE_FORMAT.parseFile(mappingsFile)
-}
+//fun getYarnMappingsFromSubmodule(minecraftVersion: String): Mappings {
+//    val yarnFolder = File("yarn")
+//    val mappingsFile = File("cache/yarn-$minecraftVersion.srg")
+//    if (mappingsFile.exists()) {
+//        println("yarn $minecraftVersion: yarn-$minecraftVersion.srg already exists")
+//        return MappingsFormat.SEARGE_FORMAT.parseFile(mappingsFile)
+//    }
+//
+//    println("yarn $minecraftVersion: checking out branch $minecraftVersion")
+//    "git checkout $minecraftVersion".runCommand(yarnFolder)
+//
+//    println("yarn $minecraftVersion: reading mappings directory")
+//    val entryTree = MappingFormat.ENIGMA_DIRECTORY.read(File(yarnFolder, "mappings").toPath(), ProgressListener.VOID)
+//    println("yarn $minecraftVersion: writing mappings to srg")
+//    MappingFormat.SRG_FILE.write(entryTree, mappingsFile.toPath(), ProgressListener.VOID)
+//
+//    // TODO: fix these
+//    val brokenClasses = listOf(
+//        "<init>", "WoodlandMansionGenerator",
+//        "VoxelSet", "ParticleManager", "PointOfInterestDebugRenderer", "NumberRange", "ServerLightingProvider",
+//        "SpellcastingIllagerEntity", "NetherFortressGenerator", "TextureUtil"
+//    )
+//    mappingsFile.writeText(mappingsFile.readLines().filter {
+//        brokenClasses.map { b -> !it.contains(b) }.foldRight(true) { a, b -> a && b }
+//    }.joinToString("\n"))
+//
+//    return MappingsFormat.SEARGE_FORMAT.parseFile(mappingsFile)
+//}

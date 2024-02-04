@@ -37,12 +37,17 @@ dependencies {
     include 'com.google.code.gson:gson:2.8.6'
     include "com.google.guava:guava:21.0"
     include "net.md-5:SpecialSource:1.8.5"
-    include "cuchaz:enigma:0.13.1.+:all"
+//    include "cuchaz:enigma:0.13.1.+"
     include 'org.cadixdev:lorenz:0.5.2'
     include 'org.cadixdev:lorenz-io-proguard:0.5.2'
     include 'net.fabricmc:mapping-io:0.5.1'
     include 'net.sf.jopt-simple:jopt-simple:5.0.4'
     include 'cn.hutool:hutool-core:5.8.16'
+    include 'org.ow2.asm:asm:9.5'
+    include 'org.ow2.asm:asm-analysis:9.5'
+    include 'org.ow2.asm:asm-commons:9.5'
+    include 'org.ow2.asm:asm-tree:9.5'
+    include 'org.ow2.asm:asm-util:9.5'
 
 	configurations.compile.extendsFrom(configurations.include)
 }
