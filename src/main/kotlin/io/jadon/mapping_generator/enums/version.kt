@@ -511,13 +511,6 @@ fun lookupMethodOrSuper(start: String,
     if (method != null) {
         return method
     } else {
-        if (methodName == "a") { // might be <init>
-            val init = superCMap.getMethod("<init>", methodDesc)
-            if (init != null) {
-                println("WARN: returning $init because 'a' might refers to '<init>'!")
-                return init
-            }
-        }
         // scan implemented interface, if any
         for (interfaceName in reader.interfaces) {
             val scan = lookupMethodOrSuper(interfaceName, original, methodName, methodDesc, jar, cache, yarn, yarnNamespaceId)
