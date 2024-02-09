@@ -152,6 +152,18 @@ enum class MinecraftVersion(
     }
 
     fun write(yarnFile: File, spigotClassIn: File, spigotMemberIn: File, yarnMappedMCJar: File?, mappingsFolder: File): File {
+        val tree = generate(yarnFile, spigotClassIn, spigotMemberIn, yarnMappedMCJar, mappingsFolder)
+        println("$mcVersion: writing final tiny mappings to $mcVersion.tiny")
+        val outputFolder = File(mappingsFolder, mcVersion)
+        val tinyFile = File(outputFolder, "$mcVersion.tiny")
+
+        val writer = MappingWriter.create(tinyFile.toPath(), MappingFormat.TINY_2_FILE)
+        tree.accept(writer)
+
+        return tinyFile
+    }
+
+    fun generate(yarnFile: File, spigotClassIn: File, spigotMemberIn: File, yarnMappedMCJar: File?, mappingsFolder: File): MappingTree {
         val outputFolder = File(mappingsFolder, mcVersion)
         outputFolder.mkdirs()
         val finalYarnFile: File
@@ -378,12 +390,7 @@ enum class MinecraftVersion(
             }
         }
 
-        println("$mcVersion: writing final tiny mappings to $mcVersion.tiny")
-
-        val writer = MappingWriter.create(tinyFile.toPath(), MappingFormat.TINY_2_FILE)
-        tree.accept(writer)
-
-        return tinyFile
+        return tree
         // json
 //        val classMappings =
 //            MultimapBuilder.hashKeys(1000).arrayListValues().build<JavaType, Pair<String, JavaType>>()
