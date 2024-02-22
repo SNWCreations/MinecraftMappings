@@ -347,7 +347,6 @@ enum class MinecraftVersion(
             for (m in ArrayList(c.methods)) {
                 val methodName = m.srcName
                 var methodDesc = m.srcDesc!!
-//                var methodNotFound = true
                 var ym = yarnCM.getMethod(methodName, methodDesc)
                 if (ym == null) {
                     if (mcJar != null) {
@@ -379,14 +378,6 @@ enum class MinecraftVersion(
                 } else {
                     println("WARN: could not fix method $methodName in $c: method not found")
                 }
-//                for (ym in yarnCM.methods) {
-//                    if (ym.srcName == methodName) {
-//                        m.setDstName(ym.getDstName(intermediaryIdInYarn), intermediaryIdInTree)
-//                        m.setDstName(ym.getDstName(yarnIdInYarn), yarnIdInTree)
-//                        methodNotFound = false
-//                        break
-//                    }
-//                }
             }
         }
 
@@ -504,8 +495,6 @@ fun lookupMethodOrSuper(start: String,
                         yarn: MappingTree,
                         yarnNamespaceId: Int): MethodMapping? {
     if (!start.startsWith("net/minecraft/")) {
-//        throw IllegalArgumentException("Method $methodName not found in $original")
-        println("WARN: reached $start, not possible to lookup method")
         return null
     }
     val reader = cache.computeIfAbsent(start) { readClass(jar, start) }
@@ -525,13 +514,7 @@ fun lookupMethodOrSuper(start: String,
                 return scan
             }
         }
-        println("WARN: method $methodName (desc $methodDesc) not found in $start, now scanning super")
     }
-//    for (method in superCMap.methods) {
-//        if (method.srcName == methodName) {
-//            return method
-//        }
-//    }
     return lookupMethodOrSuper(reader.superName, original, methodName, methodDesc, jar, cache, yarn, yarnNamespaceId)
 }
 
